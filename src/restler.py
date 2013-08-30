@@ -1,6 +1,8 @@
 import urllib2
 import urllib
 
+__version__ = '0.1'
+
 
 class Restler(object):
     ''' Restler:
