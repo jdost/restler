@@ -1,0 +1,389 @@
+import urllib2
+import urllib
+
+
+class Restler(object):
+    ''' Restler:
+    RESTler is a wrapper around a web app API.  It sets the base URL and allows
+    for attribute/OO based access to the RESTful URLs.
+
+    ex.
+    >> github = Restler('http://api.github.com/')
+    >> github
+    'Restler: http://api.github.com/'
+    >> github.user
+    'Route: http://api.github.com/user/'
+    >> github.user.username
+    'Route: http://api.github.com/user/username/'
+    '''
+    def __init__(self, base, cookies=False):
+        ''' (constructor):
+        '''
+        self.EXCEPTION_THROWING = True  # set to False if you want return codes
+        self.__test__ = False
+
+        self.__url__ = base.rstrip("/")
+        self.__route_class = Route
+        self.__route = self.__route_class('', self)
+
+        self.__opener__ = urllib2.build_opener()
+
+        if cookies:  # `cookies` can be a bool, the CookieJar or CookiePolicy
+            import cookielib
+            if isinstance(cookies, cookielib.CookieJar):
+                cj = cookies
+            elif isinstance(cookies, cookielib.CookiePolicy):
+                cj = cookielib.CookieJar(policy=cookies)
+            else:
+                cj = cookielib.CookieJar()
+
+            self.__opener__.add_handler(urllib2.HTTPCookieProcessor(cj))
+
+    def __call__(self, *args, **kwargs):
+        ''' __call__:
+        Acts as a call to the base URL `Route` for the application.
+        '''
+        return self.__route(*args, **kwargs)
+
+    def __getattr__(self, attr):
+        ''' __getattr__:
+        Retrieves the existing method from the `Restler` object, if it does not
+        exist, passes the attribute to the base route, returning any of it's
+        existing methods or creates a child `Route` object for the new URL.
+
+        Note: due to the existing method lookup, if your web API has a route
+        for '[base URL]/base/', '[base URL]/base_class/', etc, they will not
+        map properly as those are defined properties
+        '''
+        if attr in self.__dict__:
+            return self.__dict__[attr]
+
+        attr = attr.lstrip("/")
+        return self.__route.__getattr__(attr)
+
+    def __getitem__(self, attr):
+        return self.__getattr__(attr)
+
+    def __repr__(self):
+        return 'Restler: ' + str(self.__url__)
+
+    def __str__(self):
+        return str(self.__url__)
+
+    def __eq__(self, other):
+        return str(self) == str(other)
+
+    def __ne__(self, other):
+        return str(self) != str(other)
+
+
+class Route(object):
+    ''' Route:
+    The `Route` object is a wrapper around requests to a URL it is attached to
+    (passed in upon construction) usually via the attribute based URL building
+    from it's parent `Route` object.
+    '''
+    __params = {}
+    __headers = []
+
+    def __init__(self, path, base, default="GET"):
+        ''' (constructor):
+        '''
+        if not path.endswith('/'):
+            path += '/'
+        self.__path__ = path
+        self.__base = base
+        self.__response_class = Response
+        self.default_method = default
+
+    def __call__(self, method=None, *args, **kwargs):
+        ''' __call__:
+        Makes a request to the URL attached to this `Route` object.  If there
+        is a `method` argument set, it will be used as the method, otherwise
+        the default method (set on creation) will be used (defaults to `GET`).
+        '''
+        method = method if isinstance(method, str) else self.default_method
+        return self.__request__(method=method, *args, **kwargs)
+
+    def __request__(self, method, headers={}, *args, **kwargs):
+        ''' __request__:
+        Base request method, actually performs the request on the URL with the
+        defined method.
+        '''
+        headers = dict(self.__headers + headers.items())
+
+        params = dict(self.__params.items() + kwargs.items())
+        if len(params):
+            default_MIME = "application/x-www-form-urlencoded"
+            if headers.setdefault("Content-type", default_MIME) == \
+                    default_MIME:
+                params = urllib.urlencode(params)
+            elif headers["Content-type"] == "application/json":
+                params = json.dumps(params)
+            else:
+                pass  # No idea what mimetype to encode against
+        else:
+            params = ""
+            if len(args) > 0 and \
+                    (isinstance(args[0], str) or isinstance(args[0], unicode)):
+                params = args[0]
+                headers.setdefault("Content-type", "text/plain")
+
+    # Use the query string for GET ?
+    # request = urllib2.Request("?".join(str(self), params), headers=headers)
+        request = urllib2.Request(str(self), data=params, headers=headers)
+
+        request.get_method = lambda: method.upper()
+
+        if self.__base.__test__:
+            return request
+
+        #response = urllib2.urlopen(request)
+        response = self.__base.__opener__.open(request)
+        return self.__response__(response)
+
+    def __response__(self, response):
+        ''' __response__:
+        Handles the response body from a request.  This, by default, just lets
+        the `Response` object do the main parsing and returns the object.
+        '''
+        return self.__response_class(response, self.__base)
+
+    def __getattr__(self, attr):
+        ''' __getattr__:
+        Retrieves the existing method from the `Route` object, if it does not
+        exist, creates a descendent Route with the attribute name as the new
+        level in the URL.
+
+        ex.
+        >> users
+        'Route: http://myweb.app/users/'
+        >> users.test
+        'Route: http://myweb.app/users/test/'
+        '''
+        if attr in self.__dict__:
+            return self.__dict__[attr]
+
+        if attr.startswith('/'):
+            return self.__base[attr]
+
+        attr = attr.rstrip("/")
+
+        if attr.find("/") > 0:
+            path, remainder = attr.split("/", 1)
+            return self.__class__(''.join([self.__path__, path]),
+                                  self.__base)[remainder]
+
+        return self.__class__(''.join([self.__path__, attr]), self.__base)
+
+    def __getitem__(self, item):
+        return self.__getattr__(item)
+
+    def __repr__(self):
+        return 'Route: ' + ''.join([self.__base.__url__, self.__path__])
+
+    def __str__(self):
+        return ''.join([self.__base.__url__, self.__path__])
+
+    def __eq__(self, other):
+        return str(self) == str(other)
+
+    def __ne__(self, other):
+        return str(self) != str(other)
+
+
+class Response(object):
+    ''' Response:
+    The `Response` object is a handler+wrapper for the response document from
+    the HTTP requests.  It handles trying to parse the string of data into a
+    proper data structure, interpreting the status code, and organizing all of
+    the information into a manageable format.
+    '''
+    datatypes = []
+    mimetypes = {}
+
+    def __init__(self, response, base):
+        self.__base__ = response
+        self.__parent__ = base
+        self.url = self.__base__.geturl()
+        self.headers = {}
+        self.data = ""
+        self.code = response.getcode()
+
+        self.convert()
+        self.data = self.parse(self.data)
+
+    @classmethod
+    def add_datatype(cls, datatype, handler):
+        ''' (class) add_datatype:
+        Takes a datatype detection function and handler function and adds it to
+        the set of handlers for the various custom datatypes evaluated after
+        conversion via mimetype.  The detection function takes two arguments,
+        the first is the actual `Response` object (the functions are treated
+        as methods of the object) and the second is the raw value (only strings
+        are passed in).  The second function also takes two arguments, the
+        first, again, being the `Response` object and the second being the
+        value that was previously detected against.  Whatever it returns will
+        be used instead of this value.
+        '''
+        cls.datatypes.append([datatype, handler])
+
+    @classmethod
+    def add_mimetype(cls, mime, handler):
+        ''' (class) add_mimetype:
+        Takes a `MIMEtype` string and a handler function and adds it to the
+        lookup set for response handling.  The passed in function will take
+        two parameters, the first is the actual `Response` object (the
+        functions are treated as methods of the object) and the second is the
+        raw body of the response.
+        '''
+        cls.mimetypes[mime] = handler
+
+    def convert(self):
+        ''' convert:
+        Attempts to detect the MIMEtype of the response body and convert
+        accordingly.
+        '''
+        mime = self.__base__.info().gettype()
+        for mimetype, handler in self.mimetypes.items():
+            if mimetype == mime:
+                self.__base__.seek(0)
+                self.data = handler(self, self.__base__.read())
+                return
+
+        self.data = self.__base__.read()
+
+    def parse(self, data):
+        ''' parse:
+        Loops over the data, looking for string values that can be parsed into
+        rich data structures (think 2012-12-24 becomes a `datetime` object).
+        '''
+        if not isinstance(data, dict):
+            return data
+
+        def handle(val):
+            for datatype in self.datatypes:
+                if datatype[0](self, val):
+                    return datatype[1](self, val)
+
+            return val
+
+        for key, value in data.items():
+            if isinstance(value, dict):
+                data[key] = self.parse(value)
+                continue
+
+            if isinstance(value, list):
+                data[key] = map(handle, value)
+
+            if not isinstance(value, str) and not isinstance(value, unicode):
+                continue
+
+            data[key] = handle(value)
+
+        return data
+
+    def __repr__(self):
+        return "Response: " + self.url
+
+    def __str__(self):
+        self.__base__.seek(0)
+        return self.__base__.read()
+
+
+# Various custom handlers
+import json
+
+
+def __json_handler(response, body):
+    ''' json_handler:
+    Performs a conversion from the raw string into a dictionary using the built
+    in JSON library.
+    '''
+    return json.loads(body)
+
+Response.add_mimetype("application/json", __json_handler)
+
+
+import urlparse
+
+
+def __form_handler(response, body):
+    ''' form_handler:
+    Performs a conversion from the raw string into a dictionary using the built
+    in urlparsing library.
+    '''
+    data = urlparse.parse_qs(body)
+    for key, value in data.items():
+        if len(value) == 1:
+            data[key] = value[0]
+
+    return data
+
+Response.add_mimetype("application/x-www-form-urlencoded", __form_handler)
+
+
+import re
+from datetime import datetime
+
+
+class __DateHandler(object):
+    current = None
+    types = [
+        {"regex": "[0-3][0-9]/[0-3][0-9]/[0-9]{2}", "parse": "%m/%d/%y"}
+    ]
+
+    @classmethod
+    def detection(cls, response, value):
+        ''' DateHandler.detection:
+        Tests if the value matches a recognized date string format (ISO, IETF,
+        etc) so that it can then be converted into a more usable data
+        structure.
+        '''
+        for dateset in cls.types:
+            if re.match(dateset["regex"], value):
+                cls.current = dateset["parse"]
+                return True
+
+        cls.current = None
+        return False
+
+    @classmethod
+    def handler(cls, response, value):
+        ''' DateHandler.handler:
+        If the detection function found that the value was a date, the
+        handler will be run against it.  As the detection already determined
+        the parse string to use, this just needs to handle the conversion.
+        '''
+        if not cls.current:
+            return value
+
+        new_date = datetime.strptime(value, cls.current)
+        cls.current = None
+
+        #new_date.__str__ = lambda: value
+        return new_date
+
+Response.add_datatype(__DateHandler.detection, __DateHandler.handler)
+
+
+class __URLHandler(object):
+    @classmethod
+    def detection(cls, response, value):
+        ''' URLHandler.detection:
+        Tests if the value matches a format that signifies it is either an
+        absolute or relative path.
+        '''
+        return value.startswith('/') or \
+            value.startswith(str(response.__parent__.__base))
+
+    @classmethod
+    def handler(cls, response, value):
+        ''' URLHandler.handler:
+        Returns a `Route` object for the value.
+        '''
+        if value.startswith("http://"):
+            value = value[len(str(response.__parent__.__base)):]
+        return response.__parent__[value]
+
+Response.add_datatype(__URLHandler.detection, __URLHandler.handler)
