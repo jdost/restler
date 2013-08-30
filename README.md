@@ -27,10 +27,8 @@ URL, so `application.users.asdf` would request from `(application base)/users/as
 
 The `Route` object returned from each attribute of the route has a series of
 methods to help in accessing the current route or child routes.  The object itself
-is calleable which maps to a `GET` request on the object.  This can also be accessed
-with the `__get__` method (along with this, there is the `__post__`, `__put__`,
-and `__delete__` methods which map to the appropriate HTTP methods).  Any other
-attributes will map to sub URLs of the current URL the `Route` maps to.
+is calleable which maps to a `GET` request on the object.  Any other attributes will 
+map to sub URLs of the current URL the `Route` maps to.
 
 ## Response Object
 
