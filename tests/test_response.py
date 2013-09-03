@@ -35,6 +35,33 @@ class TestResponse(unittest.TestCase):
 
         self.assertEqual(response.data["url"], "http://nope/test/")
 
+    def test_nonroot_URLs(self):
+        self.app = Restler("http://nope/test/")
+        params = {"url": "/test"}
+        r = ResponseTest(
+            200, {"Content-Type": "application/json"}, json.dumps(params))
+        response = Response(r, self.app)
+
+        self.assertEqual(response.data["url"], "http://nope/test/")
+    # Bug, url in above doesn't have trailing slash, messed up with the natural
+    # trailing slash
+        self.app = Restler("http://nope/test/")
+        params = {"url": "/test/"}
+        r = ResponseTest(
+            200, {"Content-Type": "application/json"}, json.dumps(params))
+        response = Response(r, self.app)
+
+        self.assertEqual(response.data["url"], "http://nope/test/")
+
+    def test_nonroot_mismatchURLs(self):
+        self.app = Restler("http://nope/test/")
+        params = {"url": "/derp"}
+        r = ResponseTest(
+            200, {"Content-Type": "application/json"}, json.dumps(params))
+        response = Response(r, self.app)
+
+        self.assertEqual(response.data["url"], "/derp")
+
     def test_date(self):
         params = {"date": "12/24/99"}
         r = ResponseTest(
@@ -44,16 +71,14 @@ class TestResponse(unittest.TestCase):
         self.assertEqual(response.data["date"].strftime("%Y%m%d"), "19991224")
 
 
-class HeadersTest(object):
-    def __init__(self, d):
-        self.d = d
-
+class HeadersTest(dict):
     def gettype(self):
-        return self.d.get("Content-Type", "")
+        return self.get("Content-Type", "")
 
 
 class ResponseTest(object):
-    def __init__(self, code, headers, data):
+    def __init__(self, code, headers, data, url=''):
+        self.__url = url
         self.__data = data
         self.__code = code
         self.__headers = HeadersTest(headers)
@@ -66,3 +91,9 @@ class ResponseTest(object):
 
     def info(self):
         return self.__headers
+
+    def geturl(self):
+        return self.__url
+
+    def seek(self, i):
+        return

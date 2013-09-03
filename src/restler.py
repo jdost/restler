@@ -24,9 +24,11 @@ class Restler(object):
         self.EXCEPTION_THROWING = True  # set to False if you want return codes
         self.__test__ = False
 
-        self.__url__ = base.rstrip("/")
+        url_info = urlparse.urlparse(base)
+        scheme = url_info.scheme if len(url_info.scheme) else 'http'
+        self.__url__ = '{}://{}'.format(scheme, url_info.netloc)
         self.__route_class = Route
-        self.__route = self.__route_class('', self)
+        self.__route = self.__route_class(url_info.path, self)
 
         self.__opener__ = urllib2.build_opener()
 
@@ -60,8 +62,13 @@ class Restler(object):
         if attr in self.__dict__:
             return self.__dict__[attr]
 
-        attr = attr.lstrip("/")
-        return self.__route.__getattr__(attr)
+        if attr.startswith('/'):
+            if len(self.__route.__path__) > 0:
+                if not attr.startswith(self.__route.__path__.rstrip('/')):
+                    return attr
+                attr = attr[len(self.__route.__path__):]
+
+        return self.__route.__getattr__(attr.lstrip('/'))
 
     def __getitem__(self, attr):
         return self.__getattr__(attr)
@@ -208,12 +215,13 @@ class Response(object):
         self.__base__ = response
         self.__parent__ = base
         self.url = self.__base__.geturl()
-        self.headers = {}
+        self.headers = self.__base__.info()
         self.data = ""
         self.code = response.getcode()
 
         self.convert()
         self.data = self.parse(self.data)
+        self.parse_headers()
 
     @classmethod
     def add_datatype(cls, datatype, handler):
@@ -284,6 +292,31 @@ class Response(object):
             data[key] = handle(value)
 
         return data
+
+    def parse_headers(self):
+        ''' parse_headers:
+        Traverses the headers of the response and sets them in the `headers`
+        dictionary of the object.  Any handlers set for a header type will be
+        run against a header if it exists.
+        '''
+        if 'Link' in self.headers:
+            self.__link_header()
+
+    def __link_header(self):
+        ''' (private) link_header:
+        If the `Link` header is set in the response, the values will be parsed
+        and appropriate methods will be added for the relative locations.
+        '''
+        links_raw = self.__base__.headers['Link'].split(',')
+        links = {}
+        for link in links_raw:
+            info_raw = link.split(';')
+            info = {'url': info_raw[0].strip(' <>')}
+            for i in info_raw[1:]:
+                i = i.split('=')
+                info[i[0]] = i[1]
+
+            links[info['rel']] = info
 
     def __repr__(self):
         return "Response: " + self.url
