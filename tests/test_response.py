@@ -156,7 +156,3 @@ class ResponseTest(object):
     def geturl(self):
         ''' URL getter '''
         return self.__url
-
-    def seek(self, i):
-        ''' Dummy method for the file-like object interface '''
-        return
