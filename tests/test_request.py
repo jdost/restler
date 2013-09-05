@@ -61,6 +61,16 @@ class TestRequest(unittest.TestCase):
         should be parsed and set as default params
         '''
         route = self.app['users?name=test']
-        request = route()
+        request = route("POST")
         self.assertEqual("name=test", request.get_data())
         self.assertEqual(request.get_selector(), "/users/")
+
+    def test_get_data(self):
+        ''' Tests that data for a GET is in the query string
+        The data will also be in the header, but it is common for the data to
+        live in the query string of the URL.
+        '''
+        route = self.app.test
+        request = route(foo="bar")
+        self.assertEqual("foo=bar", request.get_data())
+        self.assertEqual("/test/?foo=bar", request.get_selector())

@@ -149,9 +149,12 @@ class Route(object):
                 params = args[0]
                 headers.setdefault("Content-type", "text/plain")
 
-    # Use the query string for GET ?
-    # request = urllib2.Request("?".join(str(self), params), headers=headers)
-        request = urllib2.Request(str(self), data=params, headers=headers)
+        # Use the query string for GET ?
+        if method.upper() == 'GET' and len(params):
+            request = urllib2.Request("?".join([str(self), params]),
+                                      data=params, headers=headers)
+        else:
+            request = urllib2.Request(str(self), data=params, headers=headers)
 
         request.get_method = lambda: method.upper()
 
@@ -160,7 +163,7 @@ class Route(object):
 
         try:
             response = self.__base.__opener__.open(request)
-            return self.__response(response)
+            return self.__response__(response)
         except urllib2.URLError:
             if self.__base__.EXCEPTION_THROWING:
                 raise InvalidURLError()
@@ -292,7 +295,6 @@ class Response(object):
         mime = self.__base__.info().gettype()
         for mimetype, handler in self.mimetypes.items():
             if mimetype == mime:
-                self.__base__.seek(0)
                 self.data = handler(self, self.__base__.read())
                 return
 
@@ -360,7 +362,6 @@ class Response(object):
         return "Response: " + self.url
 
     def __str__(self):
-        self.__base__.seek(0)
         return self.__base__.read()
 
     def __nonzero__(self):
