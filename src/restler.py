@@ -87,6 +87,9 @@ class Restler(object):
     def __ne__(self, other):
         return str(self) != str(other)
 
+    def __hash__(self):
+        return reduce(lambda s, x: s ^ ord(x), str(self), 0)
+
 
 class Route(object):
     ''' Route:
@@ -232,6 +235,9 @@ class Route(object):
 
     def __ne__(self, other):
         return str(self) != str(other)
+
+    def __hash__(self):
+        return reduce(lambda s, x: s ^ ord(x), str(self), 0)
 
 
 class Response(object):
