@@ -3,7 +3,7 @@ import urllib
 import httplib
 import urlparse
 
-__version__ = '0.1'
+__version__ = '0.2'
 
 
 class Restler(object):
@@ -25,6 +25,7 @@ class Restler(object):
         '''
         self.EXCEPTION_THROWING = True  # set to False if you want return codes
         self.__test__ = False
+        self.__name__ = "Restler v{}".format(__version__)
 
         url_info = urlparse.urlparse(base)
         scheme = url_info.scheme if len(url_info.scheme) else 'http'
@@ -33,6 +34,7 @@ class Restler(object):
         self.__route = self.__route_class(url_info.path, self)
 
         self.__opener__ = urllib2.build_opener()
+        self.__opener__.addheaders = [('User-agent', self.__name__)]
 
         if cookies:  # `cookies` can be a bool, the CookieJar or CookiePolicy
             import cookielib
@@ -97,8 +99,8 @@ class Route(object):
     (passed in upon construction) usually via the attribute based URL building
     from it's parent `Route` object.
     '''
-    __params = {}
-    __headers = []
+    _default_params = {}
+    _default_headers = []
 
     def __init__(self, path, base, default="GET"):
         ''' (constructor):
@@ -109,7 +111,8 @@ class Route(object):
             for key, value in qs.items():
                 if len(value) == 1:
                     qs[key] = value[0]
-            self.__params = dict(self.__params.items() + qs.items())
+            self._default_params = dict(self._default_params.items() +
+                                        qs.items())
 
         if not path.endswith('/'):
             path += '/'
@@ -133,9 +136,9 @@ class Route(object):
         Base request method, actually performs the request on the URL with the
         defined method.
         '''
-        headers = dict(self.__headers + headers.items())
+        headers = dict(self._default_headers + headers.items())
 
-        params = dict(self.__params.items() + kwargs.items())
+        params = dict(self._default_params.items() + kwargs.items())
         if len(params):
             default_MIME = "application/x-www-form-urlencoded"
             if headers.setdefault("Content-type", default_MIME) == \
