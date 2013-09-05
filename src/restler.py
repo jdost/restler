@@ -1,5 +1,7 @@
 import urllib2
 import urllib
+import httplib
+import urlparse
 
 __version__ = '0.1'
 
@@ -98,8 +100,17 @@ class Route(object):
     def __init__(self, path, base, default="GET"):
         ''' (constructor):
         '''
+        if path.find("?") != -1:
+            path, qs = path.split("?", 1)
+            qs = urlparse.parse_qs(qs)
+            for key, value in qs.items():
+                if len(value) == 1:
+                    qs[key] = value[0]
+            self.__params = dict(self.__params.items() + qs.items())
+
         if not path.endswith('/'):
             path += '/'
+
         self.__path__ = path
         self.__base = base
         self.__response_class = Response
@@ -147,16 +158,35 @@ class Route(object):
         if self.__base.__test__:
             return request
 
-        #response = urllib2.urlopen(request)
-        response = self.__base.__opener__.open(request)
-        return self.__response__(response)
+        try:
+            response = self.__base.__opener__.open(request)
+            return self.__response(response)
+        except urllib2.URLError:
+            if self.__base__.EXCEPTION_THROWING:
+                raise InvalidURLError()
+            else:
+                return (ERRORS["InvalidURL"], None)
 
     def __response__(self, response):
         ''' __response__:
         Handles the response body from a request.  This, by default, just lets
         the `Response` object do the main parsing and returns the object.
         '''
-        return self.__response_class(response, self.__base)
+        try:
+            response = self.__response_class(response, self.__base)
+            if not self.__base.EXCEPTION_THROWING:
+                return 0, response
+            return response
+        except ServerError as err:
+            if self.__base.EXCEPTION_THROWING:
+                raise err
+            else:
+                return (ERRORS["ServerError"], err)
+        except RequestError as err:
+            if self.__base.EXCEPTION_THROWING:
+                raise err
+            else:
+                return (ERRORS["RequestError"], err)
 
     def __getattr__(self, attr):
         ''' __getattr__:
@@ -219,6 +249,11 @@ class Response(object):
         self.data = ""
         self.code = response.getcode()
 
+        if self.code >= httplib.INTERNAL_SERVER_ERROR:
+            raise ServerError(self.code, self.__base__.read())
+        elif self.code >= httplib.BAD_REQUEST:
+            raise RequestError(self.code, self.__base__.read())
+
         self.convert()
         self.data = self.parse(self.data)
         self.parse_headers()
@@ -268,15 +303,18 @@ class Response(object):
         Loops over the data, looking for string values that can be parsed into
         rich data structures (think 2012-12-24 becomes a `datetime` object).
         '''
-        if not isinstance(data, dict):
-            return data
-
+        # handle is just a function that is mapped against a list
         def handle(val):
             for datatype in self.datatypes:
                 if datatype[0](self, val):
                     return datatype[1](self, val)
 
             return val
+
+        if isinstance(data, list):
+            return map(handle, data)
+        elif not isinstance(data, dict):
+            return data
 
         for key, value in data.items():
             if isinstance(value, dict):
@@ -325,6 +363,9 @@ class Response(object):
         self.__base__.seek(0)
         return self.__base__.read()
 
+    def __nonzero__(self):
+        return self.code < httplib.BAD_REQUEST
+
 
 # Various custom handlers
 import json
@@ -338,9 +379,6 @@ def __json_handler(response, body):
     return json.loads(body)
 
 Response.add_mimetype("application/json", __json_handler)
-
-
-import urlparse
 
 
 def __form_handler(response, body):
@@ -410,15 +448,55 @@ class __URLHandler(object):
         absolute or relative path.
         '''
         return value.startswith('/') or \
-            value.startswith(str(response.__parent__.__base))
+            value.startswith(str(response.__parent__))
 
     @classmethod
     def handler(cls, response, value):
         ''' URLHandler.handler:
         Returns a `Route` object for the value.
         '''
-        if value.startswith("http://"):
-            value = value[len(str(response.__parent__.__base)):]
+        if value.startswith(str(response.__parent__)):
+            value = value[len(str(response.__parent__)):]
         return response.__parent__[value]
 
 Response.add_datatype(__URLHandler.detection, __URLHandler.handler)
+
+
+# Exceptions/Errors
+ERRORS = {
+    'InvalidURL': 1,
+    'RequestError': 4,  # 4xx errors
+    'ServerError': 5    # 5xx errors
+}
+
+
+class InvalidURLError(Exception):
+    pass
+
+
+class RequestError(Exception):
+    def __init__(self, code, body):
+        self.code = code
+        self.body = body
+
+    def __cmp__(self, other):
+        if self.code == other:
+            return 0
+        return 1 if self.code > other else -1
+
+    def __str__(self):
+        return self.body
+
+
+class ServerError(Exception):
+    def __init__(self, code, body):
+        self.code = code
+        self.body = body
+
+    def __cmp__(self, other):
+        if self.code == other:
+            return 0
+        return 1 if self.code > other else -1
+
+    def __str__(self):
+        return self.body
