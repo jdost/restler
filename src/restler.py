@@ -20,12 +20,13 @@ class Restler(object):
     >> github.user.username
     'Route: http://api.github.com/user/username/'
     '''
+    __name__ = "Restler v{}".format(__version__)
+
     def __init__(self, base, cookies=False):
         ''' (constructor):
         '''
         self.EXCEPTION_THROWING = True  # set to False if you want return codes
         self.__test__ = False
-        self.__name__ = "Restler v{}".format(__version__)
 
         url_info = urlparse.urlparse(base)
         scheme = url_info.scheme if len(url_info.scheme) else 'http'
