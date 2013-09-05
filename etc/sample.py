@@ -9,7 +9,8 @@ app = Restler("http://127.0.0.1:9000")
 # Basic call
 try:
     response = app()
-except urllib2.URLError:
+except urllib2.URLError as err:
+    print err
     print "Make sure you have the `etc/http_server.py` script running"
     sys.exit(1)
 print response.data
