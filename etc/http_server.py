@@ -1,6 +1,12 @@
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-import urlparse
-import urllib
+try:
+    from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+except ImportError:
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+try:
+    from urlparse import parse_qs
+    from urllib import urlencode
+except ImportError:
+    from urllib.parse import urlencode, parse_qs
 import json
 
 
@@ -11,7 +17,7 @@ class TestHandler(BaseHTTPRequestHandler):
 
         params = self.rfile.read(
             int(self.headers.getheader('Content-Length', '0')))
-        params = urlparse.parse_qs(params)
+        params = parse_qs(params)
 
         data = {
             "path": self.path,
@@ -27,8 +33,9 @@ class TestHandler(BaseHTTPRequestHandler):
             data = json.dumps(data)
         elif self.headers.getheader('Accepts') == \
                 'application/x-www-form-urlencoded':
-            self.send_header('Content-type', 'application/x-www-form-urlencoded')
-            data = urllib.urlencode(data)
+            self.send_header('Content-type',
+                             'application/x-www-form-urlencoded')
+            data = urlencode(data)
         self.end_headers()
         self.wfile.write(data)
         self.wfile.flush()

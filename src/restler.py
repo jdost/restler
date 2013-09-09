@@ -1,9 +1,28 @@
-import urllib2
-import urllib
-import httplib
-import urlparse
+try:
+    import urllib2
+except ImportError:
+    import urllib.request as urllib2
+try:
+    from urllib import urlencode
+except ImportError:
+    from urllib.parse import urlencode
+try:
+    import httplib
+except ImportError:
+    import http.client as httplib
+try:
+    from urlparse import urlparse, parse_qs
+except ImportError:
+    from urllib.parse import urlparse, parse_qs
 
 __version__ = '0.2'
+
+
+def isstr(s):
+    try:
+        return isinstance(s, str) or isinstance(s, unicode)
+    except NameError:
+        return isinstance(s, str)
 
 
 class Restler(object):
@@ -28,7 +47,7 @@ class Restler(object):
         self.EXCEPTION_THROWING = True  # set to False if you want return codes
         self.__test__ = False
 
-        url_info = urlparse.urlparse(base)
+        url_info = urlparse(base)
         scheme = url_info.scheme if len(url_info.scheme) else 'http'
         self.__url__ = '{}://{}'.format(scheme, url_info.netloc)
         self.__route_class = Route
@@ -108,12 +127,12 @@ class Route(object):
         '''
         if path.find("?") != -1:
             path, qs = path.split("?", 1)
-            qs = urlparse.parse_qs(qs)
+            qs = parse_qs(qs)
             for key, value in qs.items():
                 if len(value) == 1:
                     qs[key] = value[0]
-            self._default_params = dict(self._default_params.items() +
-                                        qs.items())
+            self._default_params = dict(list(self._default_params.items()) +
+                                        list(qs.items()))
 
         if not path.endswith('/'):
             path += '/'
@@ -137,31 +156,34 @@ class Route(object):
         Base request method, actually performs the request on the URL with the
         defined method.
         '''
-        headers = dict(self._default_headers + headers.items())
+        headers = dict(self._default_headers + list(headers.items()))
 
-        params = dict(self._default_params.items() + kwargs.items())
+        params = dict(list(self._default_params.items()) +
+                      list(kwargs.items()))
         if len(params):
             default_MIME = "application/x-www-form-urlencoded"
             if headers.setdefault("Content-type", default_MIME) == \
                     default_MIME:
-                params = urllib.urlencode(params)
+                params = urlencode(params)
             elif headers["Content-type"] == "application/json":
                 params = json.dumps(params)
             else:
                 pass  # No idea what mimetype to encode against
         else:
             params = ""
-            if len(args) > 0 and \
-                    (isinstance(args[0], str) or isinstance(args[0], unicode)):
+            if len(args) > 0 and isstr(args[0]):
                 params = args[0]
                 headers.setdefault("Content-type", "text/plain")
 
         # Use the query string for GET ?
         if method.upper() == 'GET' and len(params):
-            request = urllib2.Request("?".join([str(self), params]),
-                                      data=params, headers=headers)
+            request = urllib2.Request(
+                "?".join([str(self), params]),
+                data=bytearray(params, 'utf-8'), headers=headers)
         else:
-            request = urllib2.Request(str(self), data=params, headers=headers)
+            request = urllib2.Request(
+                str(self), data=bytearray(params, 'utf-8'),
+                headers=headers)
 
         request.get_method = lambda: method.upper()
 
@@ -302,10 +324,16 @@ class Response(object):
         Attempts to detect the MIMEtype of the response body and convert
         accordingly.
         '''
-        mime = self.__base__.info().gettype()
+        try:
+            mime = self.__base__.info().gettype()
+        except AttributeError:
+            mime = self.__base__.info().get_content_type()
         for mimetype, handler in self.mimetypes.items():
             if mimetype == mime:
-                self.data = handler(self, self.__base__.read())
+                raw = self.__base__.read()
+                if isinstance(raw, bytes):
+                    raw = raw.decode("UTF-8")
+                self.data = handler(self, raw)
                 return
 
         self.data = self.__base__.read()
@@ -324,7 +352,7 @@ class Response(object):
             return val
 
         if isinstance(data, list):
-            return map(handle, data)
+            return list(map(handle, data))
         elif not isinstance(data, dict):
             return data
 
@@ -334,9 +362,9 @@ class Response(object):
                 continue
 
             if isinstance(value, list):
-                data[key] = map(handle, value)
+                data[key] = list(map(handle, value))
 
-            if not isinstance(value, str) and not isinstance(value, unicode):
+            if not isstr(value):
                 continue
 
             data[key] = handle(value)
@@ -397,7 +425,7 @@ def __form_handler(response, body):
     Performs a conversion from the raw string into a dictionary using the built
     in urlparsing library.
     '''
-    data = urlparse.parse_qs(body)
+    data = parse_qs(body)
     for key, value in data.items():
         if len(value) == 1:
             data[key] = value[0]
