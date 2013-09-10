@@ -1,18 +1,12 @@
 try:
     import urllib2
-except ImportError:
-    import urllib.request as urllib2
-try:
     from urllib import urlencode
-except ImportError:
-    from urllib.parse import urlencode
-try:
     import httplib
-except ImportError:
-    import http.client as httplib
-try:
     from urlparse import urlparse, parse_qs
 except ImportError:
+    import urllib.request as urllib2
+    from urllib.parse import urlencode
+    import http.client as httplib
     from urllib.parse import urlparse, parse_qs
 
 __version__ = '0.2'
