@@ -7,7 +7,7 @@ except ImportError:
     from functools import reduce
 
 from . import __version__
-from route import Route
+from .route import Route
 
 
 class Restler(object):
