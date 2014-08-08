@@ -36,7 +36,6 @@ class DateHandler(object):
         new_date = datetime.strptime(value, cls.current)
         cls.current = None
 
-        #new_date.__str__ = lambda: value
         return new_date
 
 from restler import Response
