@@ -5,8 +5,8 @@ unittest:
 	nosetests --with-color ./tests/test_*.py
 
 lint:
-	flake8 ./src/*.py
-	flake8 ./tests/*.py
+	flake8 --ignore=F401 --max-complexity 12 src/
+	flake8 --ignore=F401 --max-complexity 12 tests/
 
 test: lint unittest
 
