@@ -16,22 +16,22 @@ class TestHandler(BaseHTTPRequestHandler):
         self.parse_request()
 
         params = self.rfile.read(
-            int(self.headers.getheader('Content-Length', '0')))
+            int(self.headers.get('Content-Length', '0')))
         params = parse_qs(params)
 
         data = {
             "path": self.path,
             "method": self.command,
             "params": params,
-            "headers": self.headers.headers
+            "headers": dict(self.headers.items())
         }
 
         self.send_response(200)
-        if self.headers.getheader('Accepts', 'application/json') == \
+        if self.headers.get('Accepts', 'application/json') == \
                 'application/json':
             self.send_header('Content-type', 'application/json')
             data = json.dumps(data)
-        elif self.headers.getheader('Accepts') == \
+        elif self.headers.get('Accepts') == \
                 'application/x-www-form-urlencoded':
             self.send_header('Content-type',
                              'application/x-www-form-urlencoded')

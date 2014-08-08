@@ -7,7 +7,7 @@ from .errors import InvalidURLError, RequestError, ServerError
 
 
 # Various custom handlers
-import handlers.json_handler
-import handlers.form_handler
-import handlers.date_handler
-import handlers.url_handler
+from .handlers import json_handler
+from .handlers import form_handler
+from .handlers import date_handler
+from .handlers import url_handler
