@@ -4,7 +4,7 @@ try:
 except ImportError:
     import urllib.request as urllib2
     from urllib.parse import urlparse
-    import functools.reduce as reduce
+    from functools import reduce
 
 from . import __version__
 from route import Route

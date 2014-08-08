@@ -6,7 +6,7 @@ except ImportError:
     import urllib.request as urllib2
     from urllib.parse import urlencode
     from urllib.parse import parse_qs
-    import functools.reduce as reduce
+    from functools import reduce
 
 from .response import Response
 from .utils import isstr
