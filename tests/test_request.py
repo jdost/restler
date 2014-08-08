@@ -3,6 +3,10 @@ import json
 from restler import Restler
 
 
+def normalize(s):
+    return s.decode("utf8") if isinstance(s, bytearray) else s
+
+
 class TestRequest(unittest.TestCase):
     def setUp(self):
         self.app = Restler("http://127.0.0.1/")
@@ -21,7 +25,7 @@ class TestRequest(unittest.TestCase):
         '''
         request = self.app.users("POST", user="test")
         self.assertEqual(request.get_method(), "POST")
-        self.assertEqual(request.get_data(), "user=test")
+        self.assertEqual(normalize(request.get_data()), "user=test")
 
     def test_method_casing(self):
         ''' Tests the casing of the method
@@ -45,7 +49,7 @@ class TestRequest(unittest.TestCase):
         request = self.app.users(headers={"Content-type": "application/json"},
                                  users="test", foo="bar")
         self.assertEqual(json.dumps({"users": "test", "foo": "bar"}),
-                         request.get_data())
+                         normalize(request.get_data()))
 
     def test_long_data(self):
         ''' Tests the data body for lots of data
@@ -53,7 +57,8 @@ class TestRequest(unittest.TestCase):
         added to the data body
         '''
         request = self.app.users(users="test", foo="bar", bar="baz")
-        self.assertEqual("foo=bar&bar=baz&users=test", request.get_data())
+        self.assertEqual("foo=bar&bar=baz&users=test",
+                         normalize(request.get_data()))
 
     def test_qs_path(self):
         ''' Tests that a path with a query string sets the params
@@ -62,7 +67,7 @@ class TestRequest(unittest.TestCase):
         '''
         route = self.app['users?name=test']
         request = route("POST")
-        self.assertEqual("name=test", request.get_data())
+        self.assertEqual("name=test", normalize(request.get_data()))
         self.assertEqual(request.get_selector(), "/users/")
 
     def test_get_data(self):
@@ -72,5 +77,5 @@ class TestRequest(unittest.TestCase):
         '''
         route = self.app.test
         request = route(foo="bar")
-        self.assertEqual("foo=bar", request.get_data())
-        self.assertEqual("/test/?foo=bar", request.get_selector())
+        self.assertEqual("foo=bar", normalize(request.get_data()))
+        self.assertEqual("/test/?foo=bar", normalize(request.get_selector()))
