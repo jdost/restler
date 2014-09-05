@@ -1,5 +1,7 @@
 # RESTler
 
+Status: ![Travis Status](https://travis-ci.org/jdost/restler.svg?branch=master)
+
 RESTler is a python library I dreamed up that maps Object+method calls to RESTful
 URL requests.  The idea is that you create a base RESTler object for the root of the
 RESTful web application and then use method calls to get sub URLs and then use some
