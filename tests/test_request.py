@@ -57,8 +57,8 @@ class TestRequest(unittest.TestCase):
         added to the data body
         '''
         request = self.app.users(users="test", foo="bar", bar="baz")
-        self.assertEqual("foo=bar&bar=baz&users=test",
-                         normalize(request.get_data()))
+        self.assertItemsEqual("foo=bar&bar=baz&users=test".split("&"),
+                              normalize(request.get_data()).split("&"))
 
     def test_qs_path(self):
         ''' Tests that a path with a query string sets the params
