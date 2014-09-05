@@ -93,9 +93,9 @@ class Response(object):
             return val
 
         if isinstance(data, list):
-            return list(map(handle, data))
+            return list(map(self.parse, data))
         elif not isinstance(data, dict):
-            return data
+            return handle(data)
 
         for key, value in data.items():
             if isinstance(value, dict):
@@ -103,7 +103,7 @@ class Response(object):
                 continue
 
             if isinstance(value, list):
-                data[key] = list(map(handle, value))
+                data[key] = map(self.parse, value)
 
             if not isstr(value):
                 continue
