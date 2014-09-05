@@ -14,9 +14,12 @@ def isstr(s):
 def to_urlstr(p):
     params = []
     if any([isinstance(v, list) for v in p.values()]):
+        removals = []
         for k, v in p.items():
             if not isinstance(v, list):
                 continue
             params += map(lambda v: (k, v), v)
+            removals.append(k)
+        for k in removals:
             del p[k]
     return urlencode(list(p.items()) + params)
