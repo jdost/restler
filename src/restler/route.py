@@ -1,15 +1,13 @@
 try:
     import urllib2
-    from urllib import urlencode
     from urlparse import parse_qs
 except ImportError:
     import urllib.request as urllib2
-    from urllib.parse import urlencode
     from urllib.parse import parse_qs
     from functools import reduce
 
 from .response import Response
-from .utils import isstr
+from .utils import isstr, to_urlstr
 from .errors import ERRORS, InvalidURLError, ServerError, RequestError
 import json
 
@@ -65,7 +63,7 @@ class Route(object):
             default_MIME = "application/x-www-form-urlencoded"
             if headers.setdefault("Content-type", default_MIME) == \
                     default_MIME:
-                params = urlencode(params)
+                params = to_urlstr(params)
             elif headers["Content-type"] == "application/json":
                 params = json.dumps(params)
             else:

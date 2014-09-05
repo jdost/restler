@@ -70,6 +70,15 @@ class TestRequest(unittest.TestCase):
         self.assertEqual("name=test", normalize(request.get_data()))
         self.assertEqual(request.get_selector(), "/users/")
 
+    def test_multi_params(self):
+        ''' Tests a data body with an array value
+        Creates a request with multiple values for a key set, checks that the
+        key is used for each value individually.
+        '''
+        request = self.app.users(users=["foo", "bar", "baz"])
+        self.assertItemsEqual("users=foo&users=bar&users=baz".split("&"),
+                              normalize(request.get_data()).split("&"))
+
     def test_get_data(self):
         ''' Tests that data for a GET is in the query string
         The data will also be in the header, but it is common for the data to
