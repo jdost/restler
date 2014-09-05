@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from ..utils import isstr
 
 
 class DateHandler(object):
@@ -16,6 +17,8 @@ class DateHandler(object):
         structure.
         '''
         for dateset in cls.types:
+            if not isstr(value):
+                continue
             if re.match(dateset["regex"], value):
                 cls.current = dateset["parse"]
                 return True

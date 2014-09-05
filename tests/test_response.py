@@ -94,6 +94,23 @@ class TestResponse(unittest.TestCase):
         response = Response(r, self.app)
 
         self.assertEqual(response.data["url"], "/derp")
+
+    def test_url_bad_types(self):
+        ''' Tests that url handler doesn't break on non strings
+        Tests various types other than strings being passed into the url
+        handler and it doesn't fall over.
+        '''
+        types = [
+            15,
+            True,
+            None,
+            1.5,
+        ]
+
+        for t in types:
+            params = {"url": t}
+            ResponseTest(
+                200, {"Content-Type": "application/json"}, json.dumps(params))
 # datetime datatypes
 
     def test_date(self):
@@ -107,6 +124,23 @@ class TestResponse(unittest.TestCase):
         response = Response(r, self.app)
 
         self.assertEqual(response.data["date"].strftime("%Y%m%d"), "19991224")
+
+    def test_date_bad_types(self):
+        ''' Tests that datetime doesn't break on non strings
+        Tests various types other than strings being passed into the datetime
+        handler and it doesn't fall over.
+        '''
+        types = [
+            15,
+            True,
+            None,
+            1.5,
+        ]
+
+        for t in types:
+            params = {"date": t}
+            ResponseTest(
+                200, {"Content-Type": "application/json"}, json.dumps(params))
 
     def test_errors(self):
         ''' Tests that errors are raised for status codes

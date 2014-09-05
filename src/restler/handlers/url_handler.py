@@ -1,3 +1,6 @@
+from ..utils import isstr
+
+
 class URLHandler(object):
     @classmethod
     def detection(cls, response, value):
@@ -5,6 +8,9 @@ class URLHandler(object):
         Tests if the value matches a format that signifies it is either an
         absolute or relative path.
         '''
+        if not isstr(value):
+            return False
+
         return value.startswith('/') or \
             value.startswith(str(response.__parent__))
 
