@@ -19,4 +19,4 @@ def to_urlstr(p):
                 continue
             params += map(lambda v: (k, v), v)
             del p[k]
-    return urlencode(p.items() + params)
+    return urlencode(list(p.items()) + params)
