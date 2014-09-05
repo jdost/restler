@@ -12,6 +12,14 @@ class TestRequest(unittest.TestCase):
         self.app = Restler("http://127.0.0.1/")
         self.app.__test__ = True
 
+    def assertSameUrlStrings(self, a, b):
+        a_set = a.split("&")
+        b_set = b.split("&")
+        if hasattr(self, "assertItemsEqual"):
+            return self.assertItemsEqual(a_set, b_set)
+        else:
+            return self.assertCountEqual(a_set, b_set)
+
     def test_basic(self):
         ''' Tests the basic Request formation from a `Route`
         Gets the created `urllib2.Request` object and confirms basic setup
@@ -57,8 +65,8 @@ class TestRequest(unittest.TestCase):
         added to the data body
         '''
         request = self.app.users(users="test", foo="bar", bar="baz")
-        self.assertItemsEqual("foo=bar&bar=baz&users=test".split("&"),
-                              normalize(request.get_data()).split("&"))
+        self.assertSameUrlStrings("foo=bar&bar=baz&users=test",
+                                  normalize(request.get_data()))
 
     def test_qs_path(self):
         ''' Tests that a path with a query string sets the params
@@ -76,8 +84,8 @@ class TestRequest(unittest.TestCase):
         key is used for each value individually.
         '''
         request = self.app.users(users=["foo", "bar", "baz"])
-        self.assertItemsEqual("users=foo&users=bar&users=baz".split("&"),
-                              normalize(request.get_data()).split("&"))
+        self.assertSameUrlStrings("users=foo&users=bar&users=baz",
+                                  normalize(request.get_data()))
 
     def test_get_data(self):
         ''' Tests that data for a GET is in the query string
