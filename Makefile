@@ -26,3 +26,7 @@ clean:
 
 test_server:
 	python ./etc/http_server.py
+
+publish:
+	python setup.py register
+	python setup.py sdist upload --sign --identity=2073CDA5
