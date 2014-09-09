@@ -3,8 +3,8 @@ try:
 except ImportError:
     import http.client as httplib
 
-from .utils import isstr
-from .errors import ServerError, RequestError
+from restler.utils import isstr
+from restler.errors import ServerError, RequestError
 
 
 class Response(object):

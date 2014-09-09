@@ -27,6 +27,11 @@ tags = [
     "Programming Language :: Python :: 3.3",
 ]
 
+packages = [
+    "restler",
+    "restler.handlers"
+]
+
 setup(
     name="librestler",
     version=restler.__version__,
@@ -38,8 +43,11 @@ setup(
     author_email="jostendorf@gmail.com",
     url="http://jdost.us/restler/",
 
-    packages=['restler'],
-    package_dir={'restler': 'src/restler'},
+    packages=packages,
+    package_dir={
+        'restler': 'src/restler',
+        'restler.handlers': 'src/restler/handlers'
+    },
     package_data={'': ["LICENSE"]},
     include_package_data=True,
 

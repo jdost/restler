@@ -6,8 +6,8 @@ except ImportError:
     from urllib.parse import urlparse
     from functools import reduce
 
-from . import __version__
-from .route import Route
+from restler import __version__
+from restler.route import Route
 
 
 class Restler(object):

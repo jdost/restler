@@ -6,9 +6,9 @@ except ImportError:
     from urllib.parse import parse_qs
     from functools import reduce
 
-from .response import Response
-from .utils import isstr, to_urlstr
-from .errors import ERRORS, InvalidURLError, ServerError, RequestError
+from restler.response import Response
+from restler.utils import isstr, to_urlstr
+from restler.errors import ERRORS, InvalidURLError, ServerError, RequestError
 import json
 
 

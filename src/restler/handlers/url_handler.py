@@ -1,4 +1,4 @@
-from ..utils import isstr
+from restler.utils import isstr
 
 
 class URLHandler(object):

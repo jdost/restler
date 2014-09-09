@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from ..utils import isstr
+from restler.utils import isstr
 
 
 class DateHandler(object):

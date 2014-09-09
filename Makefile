@@ -1,5 +1,6 @@
 PYTHONVERSION = $(shell python --version 2>&1 | sed 's/Python //g')
 PYTHONMAJOR = $(firstword $(subst ., ,${PYTHONVERSION}))
+PYTHONPATH = PYTHONPATH=$(PWD)/src
 
 ifeq "${PYTHONMAJOR}" "2"
 	NOSEOPTS = --with-color
@@ -11,7 +12,7 @@ init:
 	pip install -r requirements.txt
 
 unittest:
-	nosetests ${NOSEOPTS} ./tests/test_*.py
+	${PYTHONPATH} nosetests ${NOSEOPTS} ./tests/test_*.py
 
 lint:
 	flake8 --ignore=F401 --max-complexity 12 src/
@@ -21,12 +22,17 @@ test: lint unittest
 
 clean:
 	rm -f ./src/*.pyc
+	rm -f ./src/*/*.pyc
 	rm -f ./tests/*.pyc
 	rm -f ./etc/*.pyc
 
 test_server:
-	python ./etc/http_server.py
+	${PYTHONPATH} python ./etc/http_server.py
+
+shell:
+	${PYTHONPATH} python
 
 publish:
 	python setup.py register
 	python setup.py sdist upload --sign --identity=2073CDA5
+	python setup.py bdist_wheel upload --sign --identity=2073CDA5
