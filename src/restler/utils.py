@@ -13,6 +13,14 @@ def isstr(s):
         return isinstance(s, str)
 
 
+def cstrip(src, chars):
+    try:
+        trans = str.maketrans('', '', chars)
+        return src.translate(trans)
+    except AttributeError:
+        return src.translate(None, chars)
+
+
 def to_urlstr(p):
     params = []
     if any([isinstance(v, list) for v in p.values()]):

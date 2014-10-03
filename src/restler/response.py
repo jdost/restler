@@ -3,7 +3,7 @@ try:
 except ImportError:
     import http.client as httplib
 
-from restler.utils import isstr
+from restler.utils import isstr, cstrip
 from restler.errors import ServerError, RequestError
 
 
@@ -133,7 +133,7 @@ class Response(object):
             info_raw = link.split(';')
             info = {'url': info_raw[0].strip(' <>"')}
             for i in info_raw[1:]:
-                i = i.translate(None, " \"\'").split("=")
+                i = cstrip(i, " \"'").split("=")
                 info[i[0]] = i[1]
 
             links[info['rel']] = info["url"]
