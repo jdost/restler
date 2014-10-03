@@ -158,6 +158,24 @@ class TestResponse(unittest.TestCase):
 
         self.assertEqual(str(err.exception), "Server Error")
 
+    def test_links(self):
+        ''' Tests the parsing of the Link header
+        If a Link header is present, the response should have a `link` property
+        which exposes easy access to the attributes of the header.
+        '''
+        r = ResponseTest(200, {"Link": "</next>; rel=\"next\", " +
+                                       "</args?test=1>; rel=\"test\", " +
+                                       "<http://nope/full>; rel=\"full\""}, "")
+        response = Response(r, self.app)
+
+        self.assertEquals(str(response.links.next), "http://nope/next/")
+        self.assertDictEqual(response.links.test._default_params,
+                             {"test": "1"})
+        self.assertEquals(str(response.links.full), "http://nope/full/")
+
+        self.assertEqual(response.links.none, None)
+
+
 # Helper classes
 
 
@@ -174,6 +192,7 @@ class ResponseTest(object):
         self.__data = data
         self.__code = code
         self.__headers = HeadersTest(headers)
+        self.headers = headers
 
     def getcode(self):
         ''' Status code getter '''

@@ -24,6 +24,7 @@ class Response(object):
         self.headers = self.__base__.info()
         self.data = ""
         self.code = response.getcode()
+        self.link = None
 
         if self.code >= httplib.INTERNAL_SERVER_ERROR:
             raise ServerError(self.code, self.__base__.read())
@@ -130,12 +131,14 @@ class Response(object):
         links = {}
         for link in links_raw:
             info_raw = link.split(';')
-            info = {'url': info_raw[0].strip(' <>')}
+            info = {'url': info_raw[0].strip(' <>"')}
             for i in info_raw[1:]:
-                i = i.split('=')
+                i = i.translate(None, " \"\'").split("=")
                 info[i[0]] = i[1]
 
-            links[info['rel']] = info
+            links[info['rel']] = info["url"]
+
+        self.links = Links(self.__parent__, links)
 
     def __repr__(self):
         return "Response: " + self.url
@@ -145,3 +148,25 @@ class Response(object):
 
     def __nonzero__(self):
         return self.code < httplib.BAD_REQUEST
+
+
+class Links(object):
+    def __init__(self, parent, links):
+        self.parent = parent
+        self.links = links
+
+    def __getattr__(self, attr):
+        if attr in self.__dict__:
+            return self.__dict__[attr]
+
+        if attr in self.links:
+            url = self.links[attr]
+            url = url if not url.startswith(str(self.parent)) \
+                else url[len(str(self.parent)):]
+
+            return self.parent[url]
+
+        return None
+
+    def __getitem__(self, item):
+        return self.__getattr__(item)
