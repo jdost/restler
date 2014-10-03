@@ -26,7 +26,7 @@ class Restler(object):
     '''
     __name__ = "Restler v{}".format(__version__)
 
-    def __init__(self, base, cookies=False):
+    def __init__(self, base, cookies=False, follow_redirects=True):
         ''' (constructor):
         '''
         self.EXCEPTION_THROWING = True  # set to False if you want return codes
@@ -38,7 +38,12 @@ class Restler(object):
         self.__route_class = Route
         self.__route = self.__route_class(url_info.path, self)
 
-        self.__opener__ = urllib2.build_opener()
+        handlers = []
+        if not follow_redirects:
+            from restler.utils import NoRedirectHandler
+            handlers.append(NoRedirectHandler)
+
+        self.__opener__ = urllib2.build_opener(*handlers)
         self.__opener__.addheaders = [('User-agent', self.__name__)]
 
         if cookies:  # `cookies` can be a bool, the CookieJar or CookiePolicy

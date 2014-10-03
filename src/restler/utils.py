@@ -1,7 +1,9 @@
 try:
     from urllib import urlencode
+    from urllib2 import HTTPRedirectHandler
 except ImportError:
     from urllib.parse import urlencode
+    from urllib.request import HTTPRedirectHandler
 
 
 def isstr(s):
@@ -23,3 +25,11 @@ def to_urlstr(p):
         for k in removals:
             del p[k]
     return urlencode(list(p.items()) + params)
+
+
+class NoRedirectHandler(HTTPRedirectHandler):
+    def http_error_302(self, req, fp, code, msg, headers):
+        return HTTPRedirectHandler.http_error_302(self, req, fp, code,
+                                                  msg, headers)
+
+    http_error_301 = http_error_303 = http_error_307 = http_error_302
