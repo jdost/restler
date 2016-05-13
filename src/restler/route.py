@@ -20,6 +20,7 @@ class Route(object):
     '''
     _default_params = {}
     _default_headers = []
+    TRAILING_SLASH = True
 
     def __init__(self, path, base, default="GET"):
         ''' (constructor):
@@ -94,7 +95,7 @@ class Route(object):
             return self.__response__(response)
         except urllib2.URLError:
             if self.__base__.EXCEPTION_THROWING:
-                raise InvalidURLError()
+                raise InvalidURLError(str(self))
             else:
                 return (ERRORS["InvalidURL"], None)
 
@@ -118,6 +119,15 @@ class Route(object):
                 raise err
             else:
                 return (ERRORS["RequestError"], err)
+
+    @classmethod
+    def copy(cls):
+        class RouteClone(cls):
+            _default_params = {}
+            _default_headers = []
+            TRAILING_SLASH = True
+
+        return RouteClone
 
     def __getattr__(self, attr):
         ''' __getattr__:
@@ -153,7 +163,8 @@ class Route(object):
         return 'Route: ' + ''.join([self.__base.__url__, self.__path__])
 
     def __str__(self):
-        return ''.join([self.__base.__url__, self.__path__])
+        path = self.__path__ if self.TRAILING_SLASH else self.__path__[:-1]
+        return ''.join([self.__base.__url__, path])
 
     def __eq__(self, other):
         return str(self) == str(other)

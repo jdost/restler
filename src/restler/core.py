@@ -26,7 +26,8 @@ class Restler(object):
     '''
     __name__ = "Restler v{}".format(__version__)
 
-    def __init__(self, base, cookies=False, follow_redirects=True):
+    def __init__(self, base, cookies=False, follow_redirects=True,
+                 http_auth=False):
         ''' (constructor):
         '''
         self.EXCEPTION_THROWING = True  # set to False if you want return codes
@@ -35,8 +36,9 @@ class Restler(object):
         url_info = urlparse(base)
         scheme = url_info.scheme if len(url_info.scheme) else 'http'
         self.__url__ = '{}://{}'.format(scheme, url_info.netloc)
-        self.__route_class = Route
-        self.__route = self.__route_class(url_info.path, self)
+        self._route = Route.copy()
+        self.__route = self._route(url_info.path, self)
+        self.__auth_manager = None
 
         handlers = []
         if not follow_redirects:
@@ -57,11 +59,32 @@ class Restler(object):
 
             self.__opener__.add_handler(urllib2.HTTPCookieProcessor(cj))
 
+        if http_auth:
+            if isinstance(http_auth, urllib2.HTTPPasswordMgr):
+                self.__auth_manager = http_auth
+            self.__auth_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
+            if isinstance(http_auth, tuple):
+                self.__auth_manager.add_password(None, self.__url__,
+                                                 http_auth[0], http_auth[1])
+            elif isinstance(http_auth, dict):
+                self.__auth_manager.add_password(None, self.__url__,
+                                                 http_auth["username"],
+                                                 http_auth["password"])
+            self.__opener__.add_handler(
+                urllib2.HTTPBasicAuthHandler(self.__auth_manager))
+
     def __call__(self, *args, **kwargs):
         ''' __call__:
         Acts as a call to the base URL `Route` for the application.
         '''
         return self.__route(*args, **kwargs)
+
+    def add_credentials(self, username, password, path=None):
+        if not self.__auth_manager:
+            return
+
+        path = path if str(path) else self.__url__
+        self.__auth_manager.add_password(None, path, username, password)
 
     def __getattr__(self, attr):
         ''' __getattr__:
