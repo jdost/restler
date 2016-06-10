@@ -26,8 +26,11 @@ class TestHandler(BaseHTTPRequestHandler):
         self.parse_request()
 
         params = self.rfile.read(
-            int(self.headers.get('Content-Length', '0')))
+            int(self.headers.get('Content-Length', '0'))).decode("UTF-8")
         params = parse_qs(params)
+        for key in params:
+            if hasattr(params[key], '__iter__') and len(params[key]) == 1:
+                params[key] = params[key][0]
 
         data = {
             "path": self.path,
@@ -47,8 +50,12 @@ class TestHandler(BaseHTTPRequestHandler):
                              'application/x-www-form-urlencoded')
             data = urlencode(data)
         self.end_headers()
-        self.wfile.write(data)
-        self.wfile.flush()
+        try:
+            self.wfile.write(data)
+        except TypeError:
+            self.wfile.write(bytes(data, 'UTF-8'))
+        finally:
+            self.wfile.flush()
         return
 
     def log_message(self, *args, **kwargs):

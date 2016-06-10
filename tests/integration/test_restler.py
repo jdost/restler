@@ -54,5 +54,9 @@ class TestRestler(unittest.TestCase):
         received correctly.
         '''
         response = self.local(foo="bar", bar=1, baz=True)
-        self.assertItemsEqual(response.data['params'],
-                              {"foo": "bar", "bar": 1, "baz": True})
+        try:
+            self.assertItemsEqual(response.data['params'],
+                                  {"foo": "bar", "bar": 1, "baz": True})
+        except AttributeError:
+            self.assertDictEqual(response.data['params'],
+                                 {"foo": "bar", "bar": "1", "baz": "True"})
