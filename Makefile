@@ -3,20 +3,14 @@ PYTHONMAJOR = $(firstword $(subst ., ,${PYTHONVERSION}))
 PYTHONPATH = PYTHONPATH=$(PWD)/src
 INTEGRATIONPYTHONPATH = ${PYTHONPATH}:$(PWD)/etc
 
-ifeq "${PYTHONMAJOR}" "2"
-	NOSEOPTS = --with-color
-else
-	NOSEOPTS =
-endif
-
 init:
 	pip install -r requirements.txt
 
 unittest:
-	${PYTHONPATH} nosetests ${NOSEOPTS} ./tests/test_*.py
+	${PYTHONPATH} nosetests ./tests/test_*.py
 
 integration:
-	${INTEGRATIONPYTHONPATH} nosetests ${NOSEOPTS} ./tests/integration/test_*.py
+	${INTEGRATIONPYTHONPATH} nosetests ./tests/integration/test_*.py
 
 lint:
 	flake8 --ignore=F401 --max-complexity 12 src/

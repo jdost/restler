@@ -1,3 +1,2 @@
 flake8==2.0
 nose==1.2.1
-rudolf2==0.3
