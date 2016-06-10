@@ -20,7 +20,7 @@ class Route(object):
     '''
     _default_params = {}
     _default_headers = []
-    TRAILING_SLASH = True
+    TRAILING_SLASH = False
 
     def __init__(self, path, base, default="GET"):
         ''' (constructor):
@@ -125,7 +125,7 @@ class Route(object):
         class RouteClone(cls):
             _default_params = {}
             _default_headers = []
-            TRAILING_SLASH = True
+            TRAILING_SLASH = False
 
         return RouteClone
 
@@ -160,7 +160,8 @@ class Route(object):
         return self.__getattr__(item)
 
     def __repr__(self):
-        return 'Route: ' + ''.join([self.__base.__url__, self.__path__])
+        path = self.__path__ if self.TRAILING_SLASH else self.__path__[:-1]
+        return 'Route: ' + ''.join([self.__base.__url__, path])
 
     def __str__(self):
         path = self.__path__ if self.TRAILING_SLASH else self.__path__[:-1]

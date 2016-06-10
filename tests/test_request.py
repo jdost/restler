@@ -25,7 +25,7 @@ class TestRequest(unittest.TestCase):
         Gets the created `urllib2.Request` object and confirms basic setup
         '''
         request = self.app.users()
-        self.assertEqual(request.get_selector(), "/users/")
+        self.assertEqual(request.get_selector(), "/users")
 
     def test_methods(self):
         ''' Tests the method and data setup for a `Request`
@@ -76,7 +76,7 @@ class TestRequest(unittest.TestCase):
         route = self.app['users?name=test']
         request = route("POST")
         self.assertEqual("name=test", normalize(request.get_data()))
-        self.assertEqual(request.get_selector(), "/users/")
+        self.assertEqual(request.get_selector(), "/users")
 
     def test_multi_params(self):
         ''' Tests a data body with an array value
@@ -95,4 +95,4 @@ class TestRequest(unittest.TestCase):
         route = self.app.test
         request = route(foo="bar")
         self.assertEqual("foo=bar", normalize(request.get_data()))
-        self.assertEqual("/test/?foo=bar", normalize(request.get_selector()))
+        self.assertEqual("/test?foo=bar", normalize(request.get_selector()))

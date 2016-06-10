@@ -44,7 +44,7 @@ class TestResponse(unittest.TestCase):
             200, {"Content-Type": "application/json"}, json.dumps(params))
         response = Response(r, self.app)
 
-        self.assertEqual(response.data["url"], "http://nope/test/")
+        self.assertEqual(response.data["url"], "http://nope/test")
 
     def test_fullURLs(self):
         ''' Test that full URLs are handled
@@ -57,7 +57,7 @@ class TestResponse(unittest.TestCase):
         response = Response(r, self.app)
 
         self.assertTrue(isinstance(response.data["url"], Route))
-        self.assertEqual(response.data["url"], "http://nope/test2/")
+        self.assertEqual(response.data["url"], "http://nope/test2")
 
     def test_nonroot_URLs(self):
         ''' Test that URLs of a non root base URL are handled properly
@@ -71,7 +71,7 @@ class TestResponse(unittest.TestCase):
             200, {"Content-Type": "application/json"}, json.dumps(params))
         response = Response(r, self.app)
 
-        self.assertEqual(response.data["url"], "http://nope/test/")
+        self.assertEqual(response.data["url"], "http://nope/test")
     # Bug, url in above doesn't have trailing slash, messed up with the natural
     # trailing slash
         self.app = Restler("http://nope/test/")
@@ -80,7 +80,7 @@ class TestResponse(unittest.TestCase):
             200, {"Content-Type": "application/json"}, json.dumps(params))
         response = Response(r, self.app)
 
-        self.assertEqual(response.data["url"], "http://nope/test/")
+        self.assertEqual(response.data["url"], "http://nope/test")
 
     def test_nonroot_mismatchURLs(self):
         ''' Tests that URLs of a non root base URL handle mismatches
@@ -168,10 +168,10 @@ class TestResponse(unittest.TestCase):
                                        "<http://nope/full>; rel=\"full\""}, "")
         response = Response(r, self.app)
 
-        self.assertEquals(str(response.links.next), "http://nope/next/")
+        self.assertEquals(str(response.links.next), "http://nope/next")
         self.assertDictEqual(response.links.test._default_params,
                              {"test": "1"})
-        self.assertEquals(str(response.links.full), "http://nope/full/")
+        self.assertEquals(str(response.links.full), "http://nope/full")
 
         self.assertEqual(response.links.none, None)
 

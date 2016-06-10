@@ -18,9 +18,9 @@ class TestBasic(unittest.TestCase):
         used and the resulting `Route` object is correct.
         '''
         self.assertEqual(
-            self.app.users, "http://127.0.0.1:9001/users/")
+            self.app.users, "http://127.0.0.1:9001/users")
         self.assertEqual(
-            self.app.users.info, "http://127.0.0.1:9001/users/info/")
+            self.app.users.info, "http://127.0.0.1:9001/users/info")
 
     def test_deep_path(self):
         ''' Tests the path building works for large paths
@@ -29,10 +29,10 @@ class TestBasic(unittest.TestCase):
         '''
         self.assertEqual(
             self.app["users/test/whoa/deep"],
-            "http://127.0.0.1:9001/users/test/whoa/deep/")
+            "http://127.0.0.1:9001/users/test/whoa/deep")
         self.assertEqual(
             self.app.users.test.whoa.deep,
-            "http://127.0.0.1:9001/users/test/whoa/deep/")
+            "http://127.0.0.1:9001/users/test/whoa/deep")
 
     def test_comparison(self):
         ''' Tests the comparison operators for `Route` '''

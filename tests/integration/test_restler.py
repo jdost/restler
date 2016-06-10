@@ -24,7 +24,7 @@ class TestRestler(unittest.TestCase):
         defaults
         '''
         response = self.local()
-        self.assertEquals(response.url, "http://127.0.0.1:9001/")
+        self.assertEquals(response.url, "http://127.0.0.1:9001")
         self.assertEquals(response.data['method'], "GET")
         self.assertEquals(response.data['params'], {})
 
@@ -45,7 +45,7 @@ class TestRestler(unittest.TestCase):
         response = self.local.a.long.route.making.a.request()
         self.assertEquals(
             str(response.data['path']),
-            "http://127.0.0.1:9001/a/long/route/making/a/request/")
+            "http://127.0.0.1:9001/a/long/route/making/a/request")
         self.assertIsInstance(response.data['path'], Route)
 
     def test_params(self):
