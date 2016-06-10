@@ -36,7 +36,10 @@ test_server:
 	${PYTHONPATH} python ./etc/http_server.py
 
 shell:
-	${PYTHONPATH} python
+	${PYTHONPATH} python ./etc/http_server.py -t -q & echo $$! > server.PID
+	-${PYTHONPATH} python ./etc/console.py
+	kill `cat server.PID`
+	rm server.PID
 
 publish:
 	python setup.py register
