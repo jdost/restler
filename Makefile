@@ -7,13 +7,13 @@ init:
 	pip install -r requirements.txt
 
 unittest:
-	${PYTHONPATH} nosetests ./tests/test_*.py
+	${PYTHONPATH} nosetests --rednose ./tests/test_*.py
 
 integration:
-	${INTEGRATIONPYTHONPATH} nosetests ./tests/integration/test_*.py
+	${INTEGRATIONPYTHONPATH} nosetests --rednose ./tests/integration/test_*.py
 
 lint:
-	flake8 --ignore=F401 --max-complexity 12 src/
+	flake8 --ignore=F401,E402 --max-complexity 12 src/
 	flake8 --ignore=F401 --max-complexity 12 tests/
 
 test: lint unittest
