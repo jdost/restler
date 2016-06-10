@@ -2,12 +2,22 @@ try:
     from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 except ImportError:
     from http.server import BaseHTTPRequestHandler, HTTPServer
+
 try:
     from urlparse import parse_qs
     from urllib import urlencode
 except ImportError:
     from urllib.parse import urlencode, parse_qs
 import json
+from multiprocessing import Process
+from time import sleep
+
+QUIET = False
+
+
+def spawn(port):
+    server = HTTPServer(("", port), TestHandler)
+    server.serve_forever()
 
 
 class TestHandler(BaseHTTPRequestHandler):
@@ -41,18 +51,45 @@ class TestHandler(BaseHTTPRequestHandler):
         self.wfile.flush()
         return
 
+    def log_message(self, *args, **kwargs):
+        if not QUIET:
+            return BaseHTTPRequestHandler.log_message(self, *args, **kwargs)
 
-class TestServer():
-    def __init__(self, port=9000):
+
+class TestServer(object):
+    def __init__(self, port=9000, threaded=False):
         self.port = port
-        self.server = HTTPServer(("", self.port), TestHandler)
+        self.threaded = threaded
+        if self.threaded:
+            self.server = Process(target=spawn,
+                                  args=(self.port,))
+        else:
+            self.server = HTTPServer(("", self.port), TestHandler)
 
     def start(self):
-        self.server.serve_forever()
+        if self.threaded:
+            self.server.start()
+            sleep(1)  # sleep 1 second to let socket get up and listening
+        else:
+            self.server.serve_forever()
 
     def stop(self):
-        self.server.server_close()
+        if self.threaded:
+            self.server.terminate()
+        else:
+            self.server.server_close()
 
 if __name__ == "__main__":
-    server = TestServer()
+    import sys
+
+    port = 9000
+    quiet = False
+
+    for arg in sys.argv:
+        if arg in ['--quiet', '-q']:
+            QUIET = True
+        elif arg.isdigit():
+            port = int(arg, 10)
+
+    server = TestServer(port=port)
     server.start()
