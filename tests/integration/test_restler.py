@@ -24,7 +24,7 @@ class TestRestler(unittest.TestCase):
         defaults
         '''
         response = self.local()
-        self.assertEquals(response.url, "http://127.0.0.1:9001")
+        self.assertEquals(response.url, "http://127.0.0.1:9001/")
         self.assertEquals(response.data['method'], "GET")
         self.assertEquals(response.data['params'], {})
 
