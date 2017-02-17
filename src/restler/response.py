@@ -130,15 +130,22 @@ class Response(object):
         links_raw = self.__base__.headers['Link'].split(',')
         links = {}
         for link in links_raw:
-            info_raw = link.split(';')
-            info = {'url': info_raw[0].strip(' <>"')}
-            for i in info_raw[1:]:
-                i = cstrip(i, " \"'").split("=")
-                info[i[0]] = i[1]
-
+            info = Links.parse(link)
             links[info['rel']] = info["url"]
 
         self.links = Links(self.__parent__, links)
+
+    def __getattr__(self, attr):
+        if attr in self.__dict__:
+            return self.__dict__[attr]
+
+        if self.data and isinstance(self.data, dict):
+            return self.data[attr]
+
+        raise KeyError(attr)
+
+    def __getitem__(self, item):
+        return self.__getattr__(item)
 
     def __repr__(self):
         return "Response: " + self.url
@@ -161,8 +168,6 @@ class Links(object):
 
         if attr in self.links:
             url = self.links[attr]
-            url = url if not url.startswith(str(self.parent)) \
-                else url[len(str(self.parent)):]
 
             return self.parent[url]
 
@@ -170,3 +175,13 @@ class Links(object):
 
     def __getitem__(self, item):
         return self.__getattr__(item)
+
+    @classmethod
+    def parse(cls, raw):
+        info_raw = raw.split(';')
+        info = {'url': info_raw[0].strip(' <>"')}
+        for i in info_raw[1:]:
+            key, value = cstrip(i, " \"'").split("=", 1)
+            info[key] = value
+
+        return info

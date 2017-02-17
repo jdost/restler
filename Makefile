@@ -25,15 +25,18 @@ clean:
 	rm -f ./src/*/*.pyc
 	rm -f ./tests/*.pyc
 	rm -f ./etc/*.pyc
+	rm -rf build/
+	rm -rf dist/
+	rm -rf *.egg-info/
 
 test_server:
 	${PYTHONPATH} python ./etc/http_server.py
 
 shell:
-	${PYTHONPATH} python ./etc/http_server.py -t -q & echo $$! > server.PID
+	@${PYTHONPATH} python ./etc/http_server.py -t -q & echo $$! > server.PID
 	-${PYTHONPATH} python ./etc/console.py
-	kill `cat server.PID`
-	rm server.PID
+	@kill `cat server.PID`
+	@rm server.PID
 
 publish:
 	python setup.py register

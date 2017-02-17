@@ -96,3 +96,14 @@ class TestRequest(unittest.TestCase):
         request = route(foo="bar")
         self.assertEqual("foo=bar", normalize(request.get_data()))
         self.assertEqual("/test?foo=bar", normalize(request.get_selector()))
+
+    def test_reusable_routes(self):
+        ''' Tests that the route builder re-uses routes of the same path
+        The route builder should not need to build a new route for every hop in
+        the path and should be able to re-use routes that have been created for
+        a path.
+        '''
+        route = self.app.reusable
+        route.params.add_params(foo="bar")
+        self.assertDictEqual(self.app.reusable.params._default_params,
+                             {"foo": "bar"})

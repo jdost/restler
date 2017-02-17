@@ -1,9 +1,7 @@
 try:
     import urllib2
-    from urlparse import parse_qs
 except ImportError:
     import urllib.request as urllib2
-    from urllib.parse import parse_qs
     from functools import reduce
 
 from restler.response import Response
@@ -22,25 +20,23 @@ class Route(object):
     _default_headers = []
     TRAILING_SLASH = False
 
-    def __init__(self, path, base, default="GET"):
+    def __init__(self, url, base, default="GET"):
         ''' (constructor):
         '''
-        if path.find("?") != -1:
-            path, qs = path.split("?", 1)
-            qs = parse_qs(qs)
-            for key, value in qs.items():
-                if len(value) == 1:
-                    qs[key] = value[0]
-            self._default_params = dict(list(self._default_params.items()) +
-                                        list(qs.items()))
+        self._default_params = Route._default_params.copy()
+        if url.query:
+            self.add_params(**url.query)
 
-        if not path.endswith('/'):
-            path += '/'
-
-        self.__path__ = path
+        self.__path__ = url
         self.__base = base
         self.__response_class = Response
         self.default_method = default
+
+    def add_params(self, **params):
+        ''' add_params:
+        Takes key=value pairs of parameters to add to the default call params
+        '''
+        self._default_params.update(params)
 
     def __call__(self, method=None, *args, **kwargs):
         ''' __call__:
@@ -147,25 +143,16 @@ class Route(object):
         if attr.startswith('/'):
             return self.__base[attr]
 
-        attr = attr.rstrip("/")
-
-        if attr.find("/") > 0:
-            path, remainder = attr.split("/", 1)
-            return self.__class__(''.join([self.__path__, path]),
-                                  self.__base)[remainder]
-
-        return self.__class__(''.join([self.__path__, attr]), self.__base)
+        return self.__base.__get_path__(self.__path__ + attr)
 
     def __getitem__(self, item):
         return self.__getattr__(item)
 
     def __repr__(self):
-        path = self.__path__ if self.TRAILING_SLASH else self.__path__[:-1]
-        return 'Route: ' + ''.join([self.__base.__url__, path])
+        return 'Route: {!s}'.format(self.__path__)
 
     def __str__(self):
-        path = self.__path__ if self.TRAILING_SLASH else self.__path__[:-1]
-        return ''.join([self.__base.__url__, path])
+        return str(self.__path__)
 
     def __eq__(self, other):
         return str(self) == str(other)
@@ -175,3 +162,27 @@ class Route(object):
 
     def __hash__(self):
         return reduce(lambda s, x: s ^ ord(x), str(self), 0)
+
+
+class Builder(object):
+    def __init__(self, base, build_class=Route):
+        self.lookup = {}
+        self._build_class = build_class
+        self.base = base
+
+    def __call__(self, url, query=None):
+        current_lookup = self.lookup
+        for level in url.path:
+            current_lookup = current_lookup.setdefault(level, {})
+
+        route = current_lookup.get("__route__")
+        if not route:
+            route = self._build_class(url, self.base)
+            current_lookup["__route__"] = route
+
+        if url.query:
+            route.add_params(**url.query)
+        if query:
+            route.add_params(**query)
+
+        return route

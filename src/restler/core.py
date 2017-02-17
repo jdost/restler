@@ -1,13 +1,13 @@
 try:
     import urllib2
-    from urlparse import urlparse
 except ImportError:
     import urllib.request as urllib2
-    from urllib.parse import urlparse
     from functools import reduce
 
 from restler import __version__
-from restler.route import Route
+from restler.route import Builder
+from restler.url import URL, AuthManager, Cookies
+from restler.utils import isstr
 
 
 class Restler(object):
@@ -33,11 +33,9 @@ class Restler(object):
         self.EXCEPTION_THROWING = True  # set to False if you want return codes
         self.__test__ = False
 
-        url_info = urlparse(base)
-        scheme = url_info.scheme if len(url_info.scheme) else 'http'
-        self.__url__ = '{}://{}'.format(scheme, url_info.netloc)
-        self._route = Route.copy()
-        self.__route = self._route(url_info.path, self)
+        self.__url__ = URL(base)
+        self._route = Builder(self)
+        self.__route = self._route(self.__url__)
         self.__auth_manager = None
 
         handlers = []
@@ -45,33 +43,16 @@ class Restler(object):
             from restler.utils import NoRedirectHandler
             handlers.append(NoRedirectHandler)
 
-        self.__opener__ = urllib2.build_opener(*handlers)
-        self.__opener__.addheaders = [('User-agent', self.__name__)]
-
         if cookies:  # `cookies` can be a bool, the CookieJar or CookiePolicy
-            import cookielib
-            if isinstance(cookies, cookielib.CookieJar):
-                cj = cookies
-            elif isinstance(cookies, cookielib.CookiePolicy):
-                cj = cookielib.CookieJar(policy=cookies)
-            else:
-                cj = cookielib.CookieJar()
-
-            self.__opener__.add_handler(urllib2.HTTPCookieProcessor(cj))
+            self.__cookie_manager = Cookies(cookies, self.__url__)
+            handlers.append(self.__cookie_manager.handler)
 
         if http_auth:
-            if isinstance(http_auth, urllib2.HTTPPasswordMgr):
-                self.__auth_manager = http_auth
-            self.__auth_manager = urllib2.HTTPPasswordMgrWithDefaultRealm()
-            if isinstance(http_auth, tuple):
-                self.__auth_manager.add_password(None, self.__url__,
-                                                 http_auth[0], http_auth[1])
-            elif isinstance(http_auth, dict):
-                self.__auth_manager.add_password(None, self.__url__,
-                                                 http_auth["username"],
-                                                 http_auth["password"])
-            self.__opener__.add_handler(
-                urllib2.HTTPBasicAuthHandler(self.__auth_manager))
+            self.__auth_manager = AuthManager(http_auth, self.__url__)
+            handlers.append(self.__auth_manager.handler)
+
+        self.__opener__ = urllib2.build_opener(*handlers)
+        self.__opener__.addheaders = [('User-agent', self.__name__)]
 
     def __call__(self, *args, **kwargs):
         ''' __call__:
@@ -86,6 +67,21 @@ class Restler(object):
         path = path if str(path) else self.__url__
         self.__auth_manager.add_password(None, path, username, password)
 
+    def __get_path__(self, attr):
+        if not isstr(attr):
+            return self._route(attr)
+
+        path, query = URL.split(attr)
+
+        # root path and base is not root, normalize path to subset of base
+        if attr.startswith('/') and len(self.__url__.path):
+            for element in self.__url__.path:
+                if element != path[0]:
+                    return attr
+                del path[0]
+
+        return self._route(self.__url__ + path, query)
+
     def __getattr__(self, attr):
         ''' __getattr__:
         Retrieves the existing method from the `Restler` object, if it does not
@@ -99,13 +95,7 @@ class Restler(object):
         if attr in self.__dict__:
             return self.__dict__[attr]
 
-        if attr.startswith('/'):
-            if len(self.__route.__path__) > 0:
-                if not attr.startswith(self.__route.__path__.rstrip('/')):
-                    return attr
-                attr = attr[len(self.__route.__path__):]
-
-        return self.__route.__getattr__(attr.lstrip('/'))
+        return self.__get_path__(attr)
 
     def __getitem__(self, attr):
         return self.__getattr__(attr)

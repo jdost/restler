@@ -19,8 +19,6 @@ class URLHandler(object):
         ''' URLHandler.handler:
         Returns a `Route` object for the value.
         '''
-        if value.startswith(str(response.__parent__)):
-            value = value[len(str(response.__parent__)):]
         return response.__parent__[value]
 
 from restler import Response

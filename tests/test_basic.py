@@ -10,7 +10,7 @@ class TestBasic(unittest.TestCase):
         ''' Tests that the base app gets properly set
         Tests the basic values of the application object get properly set
         '''
-        self.assertEqual(self.app, "http://127.0.0.1:9001")
+        self.assertEqual(self.app, "http://127.0.0.1:9001/")
 
     def test_path_building(self):
         ''' Tests that the path building works
