@@ -1,8 +1,9 @@
 try:
     import urllib2
+    import cookielib
 except ImportError:
     import urllib.request as urllib2
-import cookielib
+    import http.cookiejar as cookielib
 
 
 class Cookies(object):
