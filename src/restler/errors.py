@@ -7,10 +7,15 @@ ERRORS = {
 
 
 class InvalidURLError(Exception):
+    """ Error raised when a URL is malformed or unparseable
+    """
     pass
 
 
 class RequestError(Exception):
+    """ Error for when the request failed for a handled reason (4xx HTTP error
+    codes)
+    """
     def __init__(self, code, body):
         self.code = code
         self.body = body
@@ -25,6 +30,9 @@ class RequestError(Exception):
 
 
 class ServerError(Exception):
+    """ Error for when the request failed for an unhandled error on the server
+    side (5xx HTTP error codes)
+    """
     def __init__(self, code, body):
         self.code = code
         self.body = body

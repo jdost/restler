@@ -5,10 +5,13 @@ except ImportError:
 
 
 def handler(response, body):
-    ''' form.handler:
-    Performs a conversion from the raw string into a dictionary using the built
-    in urlparsing library.
-    '''
+    """ MIMEtype handling function for form urlencoded data strings.  Performs
+    the conversion from the raw url encoded string using the ``urlparse``
+    library to handle the basic parsing.  (HTTP allows for the same key to be
+    used multiple times, as this behaviour is often handled differently
+    between applications, this does not attempt to handle these and it should
+    be defined by the user based on the application being communicated with)
+    """
     data = parse_qs(body)
     for key, value in data.items():
         if len(value) == 1:

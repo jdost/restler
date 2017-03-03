@@ -7,6 +7,10 @@ except ImportError:
 
 
 class Cookies(object):
+    """ Wrapper for cookie management, wraps the ``CookieJar`` construct with
+    logic for various datatypes passed in and permutation of the policy on how
+    cookies should be handled.
+    """
     def __init__(self, jar, url):
         self.url = url
         if isinstance(jar, cookielib.CookieJar):
@@ -18,4 +22,6 @@ class Cookies(object):
 
     @property
     def handler(self):
+        """ Valid ``urllib2`` request handler
+        """
         return urllib2.HTTPCookieProcessor(self.jar)

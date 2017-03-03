@@ -11,18 +11,29 @@ import json
 
 
 class Route(object):
-    ''' Route:
-    The `Route` object is a wrapper around requests to a URL it is attached to
-    (passed in upon construction) usually via the attribute based URL building
-    from it's parent `Route` object.
-    '''
+    """ Base class responsible for wrapping the route definitions of a full URL
+    that can be called/requested.
+
+    These wrapped routes are generated via the dynamic attribute building of
+    the core :class:`Restler <Restler>` class of the URL building.  ``Route``
+    objects represent a full URL and when called will make a request to that
+    location.
+
+    Usage::
+
+        >> users = github.users
+        <Route: http://api.github.com/users/>
+        >> user_list = users()
+        <Response: http://api.github.com/users/>
+        >> user_list.data
+        { users: [ { username: "jdost" } ] }
+
+    """
     _default_params = {}
     _default_headers = []
     TRAILING_SLASH = False
 
     def __init__(self, url, base, default="GET"):
-        ''' (constructor):
-        '''
         self._default_params = Route._default_params.copy()
         if url.query:
             self.add_params(**url.query)
@@ -33,25 +44,21 @@ class Route(object):
         self.default_method = default
 
     def add_params(self, **params):
-        ''' add_params:
-        Takes key=value pairs of parameters to add to the default call params
-        '''
+        """ Add in key value pairs to the parameters used by default on
+        requests.  The values will override existing ones if there are key
+        collisions.
+        """
         self._default_params.update(params)
 
     def __call__(self, method=None, *args, **kwargs):
-        ''' __call__:
-        Makes a request to the URL attached to this `Route` object.  If there
-        is a `method` argument set, it will be used as the method, otherwise
-        the default method (set on creation) will be used (defaults to `GET`).
-        '''
         method = method if isinstance(method, str) else self.default_method
         return self.__request__(method=method, *args, **kwargs)
 
     def __request__(self, method, headers={}, *args, **kwargs):
-        ''' __request__:
-        Base request method, actually performs the request on the URL with the
-        defined method.
-        '''
+        """ Makes a request to the represented URL of the object.  The method
+        passed in will be used for the request and the rest of the arguments
+        will be used to attempt to build the request body/data.
+        """
         headers = dict(self._default_headers + list(headers.items()))
 
         params = dict(list(self._default_params.items()) +
@@ -96,10 +103,9 @@ class Route(object):
                 return (ERRORS["InvalidURL"], None)
 
     def __response__(self, response):
-        ''' __response__:
-        Handles the response body from a request.  This, by default, just lets
-        the `Response` object do the main parsing and returns the object.
-        '''
+        """ Response handler, takes a raw response body and attempts to build
+        a :class:`Response <Response>` object with the returned data.
+        """
         try:
             response = self.__response_class(response, self.__base)
             if not self.__base.EXCEPTION_THROWING:
@@ -126,30 +132,36 @@ class Route(object):
         return RouteClone
 
     def __getattr__(self, attr):
-        ''' __getattr__:
-        Retrieves the existing method from the `Route` object, if it does not
-        exist, creates a descendent Route with the attribute name as the new
-        level in the URL.
+        """ Builds a subpath :class:`Route <Route>` object using the attribute
+        chain as the path to append to the current path.  If the attribute
+        string corresponds to an existing attribute on the object, that will
+        be given instead (This means that methods or attributes already set are
+        illegal paths for the application).
 
-        ex.
-        >> users
-        'Route: http://myweb.app/users/'
-        >> users.test
-        'Route: http://myweb.app/users/test/'
-        '''
+        If you want to create a subpath that collides with an already defined
+        attribute, you can use the `route['collision']` access pattern.
+
+        Usage::
+
+            >> users
+            <Route: http://myweb.app/users/>
+            >> users.test
+            <Route: http://myweb.app/users/test/>
+
+        """
         if attr in self.__dict__:
             return self.__dict__[attr]
 
-        if attr.startswith('/'):
-            return self.__base[attr]
-
-        return self.__base.__get_path__(self.__path__ + attr)
+        return self.__getitem__(attr)
 
     def __getitem__(self, item):
-        return self.__getattr__(item)
+        if item.startswith('/'):
+            return self.__base[item]
+
+        return self.__base.__get_path__(self.__path__ + item)
 
     def __repr__(self):
-        return 'Route: {!s}'.format(self.__path__)
+        return '<Route: {!s}>'.format(self.__path__)
 
     def __str__(self):
         return str(self.__path__)
@@ -165,6 +177,12 @@ class Route(object):
 
 
 class Builder(object):
+    """ Route building manager
+    Calleable object that attempts to generate or re-use routes for new URLs
+    to be generated.  Handles normalization of the URL, caches references to
+    previously generated :class:`Route <Route>` objects, allowing for default
+    overrides to carry forward to referencing the route again.
+    """
     def __init__(self, base, build_class=Route):
         self.lookup = {}
         self._build_class = build_class

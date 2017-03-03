@@ -2,10 +2,10 @@ import json
 
 
 def handler(response, body):
-    ''' json.handler:
-    Performs a conversion from the raw string into a dictionary using the built
-    in JSON library.
-    '''
+    """ MIMEtype handling function for JSON data strings.  Performs the
+    conversion fromt he raw JSON string into the rich JSON structure using the
+    built in ``json`` library.
+    """
     return json.loads(body)
 
 from restler import Response

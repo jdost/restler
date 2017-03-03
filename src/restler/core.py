@@ -11,25 +11,22 @@ from restler.utils import isstr
 
 
 class Restler(object):
-    ''' Restler:
-    RESTler is a wrapper around a web app API.  It sets the base URL and allows
-    for attribute/OO based access to the RESTful URLs.
+    """RESTler is a wrapper around a web app API.  It sets the base URL and
+    allows for attribute/OO based access to the RESTful URLs.
 
-    ex.
-    >> github = Restler('http://api.github.com/')
-    >> github
-    'Restler: http://api.github.com/'
-    >> github.user
-    'Route: http://api.github.com/user/'
-    >> github.user.username
-    'Route: http://api.github.com/user/username/'
-    '''
+    Usage::
+        >> github = Restler('http://api.github.com/')
+        >> github
+        'Restler: http://api.github.com/'
+        >> github.user
+        'Route: http://api.github.com/user/'
+        >> github.user.username
+        'Route: http://api.github.com/user/username/'
+    """
     __name__ = "Restler v{}".format(__version__)
 
     def __init__(self, base, cookies=False, follow_redirects=True,
                  http_auth=False):
-        ''' (constructor):
-        '''
         self.EXCEPTION_THROWING = True  # set to False if you want return codes
         self.__test__ = False
 
@@ -55,12 +52,12 @@ class Restler(object):
         self.__opener__.addheaders = [('User-agent', self.__name__)]
 
     def __call__(self, *args, **kwargs):
-        ''' __call__:
-        Acts as a call to the base URL `Route` for the application.
-        '''
         return self.__route(*args, **kwargs)
 
     def add_credentials(self, username, password, path=None):
+        """ Store HTTPAuth credentials, takes an optional ``path`` argument to
+        scope the credentials to a certain path in the routes.
+        """
         if not self.__auth_manager:
             return
 
@@ -83,15 +80,15 @@ class Restler(object):
         return self._route(self.__url__ + path, query)
 
     def __getattr__(self, attr):
-        ''' __getattr__:
-        Retrieves the existing method from the `Restler` object, if it does not
-        exist, passes the attribute to the base route, returning any of it's
-        existing methods or creates a child `Route` object for the new URL.
+        """ Retrieves the existing method from the :class:`Restler <Restler>`
+        object, if it does not exist, passes the attribute to the base route,
+        returning any of it's existing methods or creates a child `Route`
+        object for the new URL.
 
         Note: due to the existing method lookup, if your web API has a route
         for '[base URL]/base/', '[base URL]/base_class/', etc, they will not
         map properly as those are defined properties
-        '''
+        """
         if attr in self.__dict__:
             return self.__dict__[attr]
 
@@ -101,7 +98,7 @@ class Restler(object):
         return self.__getattr__(attr)
 
     def __repr__(self):
-        return 'Restler: ' + str(self.__url__)
+        return '<Restler: {!s}>'.format(self.__url__)
 
     def __str__(self):
         return str(self.__url__)

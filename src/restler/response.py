@@ -5,15 +5,19 @@ except ImportError:
 
 from restler.utils import isstr, cstrip
 from restler.errors import ServerError, RequestError
+from collections import namedtuple
+
+
+DatatypeHandler = namedtuple("DatatypeHandler", ['detector', 'handler'])
 
 
 class Response(object):
-    ''' Response:
-    The `Response` object is a handler+wrapper for the response document from
-    the HTTP requests.  It handles trying to parse the string of data into a
-    proper data structure, interpreting the status code, and organizing all of
-    the information into a manageable format.
-    '''
+    """ Base Response handler/wrapper that attempts to normalize and parse the
+    HTTP response body.  Attempts to handle parsing the data structure based on
+    MIMEtype, types of the parsed structure, and provide pythonic interfaces to
+    the underlying logic (i.e. bad requests evaluate as False when treated as a
+    boolean, etc).
+    """
     datatypes = []
     mimetypes = {}
 
@@ -37,35 +41,45 @@ class Response(object):
 
     @classmethod
     def add_datatype(cls, datatype, handler):
-        ''' (class) add_datatype:
-        Takes a datatype detection function and handler function and adds it to
-        the set of handlers for the various custom datatypes evaluated after
-        conversion via mimetype.  The detection function takes two arguments,
-        the first is the actual `Response` object (the functions are treated
-        as methods of the object) and the second is the raw value (only strings
-        are passed in).  The second function also takes two arguments, the
-        first, again, being the `Response` object and the second being the
-        value that was previously detected against.  Whatever it returns will
-        be used instead of this value.
-        '''
-        cls.datatypes.append([datatype, handler])
+        """ Register a new datatype handler for :class:`Response <Response>`
+        parsing.  Takes two functions, a detection function that will be used
+        to detect if the raw response value is viable to be handled, and a
+        handling function which, if the detection is valid, will convert the
+        raw response data into the rich datatype.
+
+        :param function datatype: returns a boolean on whether the passed in
+            data is handleable, the signature is `handler(response, value)`
+        :param function handler: returns the parsed output of the raw input as
+            handled by the handling function, it has the same signature as the
+            handler
+
+        For examples on use, look at :module:`DateHandler <date_handler>` or
+        :module:`URLHandler <url_handler>`.
+        """
+        cls.datatypes.append(DatatypeHandler(detector=datatype,
+                                             handler=handler))
 
     @classmethod
     def add_mimetype(cls, mime, handler):
-        ''' (class) add_mimetype:
-        Takes a `MIMEtype` string and a handler function and adds it to the
-        lookup set for response handling.  The passed in function will take
-        two parameters, the first is the actual `Response` object (the
-        functions are treated as methods of the object) and the second is the
-        raw body of the response.
-        '''
+        """ Register a new mimetype handler to handle converting the raw data
+        string into the represented rich data structure.  Relies entirely on
+        the response's reported content type to register the handling function.
+
+        :param str mime: Raw MIMEtype string expected in the response header
+        :param function handler: handling function that will return the
+            structured data representation based on the passed in raw response
+            body
+
+        For examples on use, look at :module:`JSONHandler <json_handler>` or
+        :module:`FormHandler <form_handler>`
+        """
         cls.mimetypes[mime] = handler
 
     def convert(self):
-        ''' convert:
-        Attempts to detect the MIMEtype of the response body and convert
-        accordingly.
-        '''
+        """ Goes through registered MIMEtype strings and attempts to convert
+        the raw response body into the structured data based on the handlers
+        registered.
+        """
         try:
             mime = self.__base__.info().gettype()
         except AttributeError:
@@ -81,15 +95,20 @@ class Response(object):
         self.data = self.__base__.read()
 
     def parse(self, data):
-        ''' parse:
-        Loops over the data, looking for string values that can be parsed into
-        rich data structures (think 2012-12-24 becomes a `datetime` object).
-        '''
+        """ Traverses the data structure and converts any data of a base type
+        into a richer form based on registered detection functions and the
+        corresponding handling function.
+
+        Provided handlers include a URL detector that will convert the URL
+        string into a :class:`Route <Route>` if applicable and a date detector
+        that will convert a string like ``2013-03-12`` into the rich
+        ``datetime`` object.
+        """
         # handle is just a function that is mapped against a list
         def handle(val):
             for datatype in self.datatypes:
-                if datatype[0](self, val):
-                    return datatype[1](self, val)
+                if datatype.detector(self, val):
+                    return datatype.handler(self, val)
 
             return val
 
@@ -114,19 +133,13 @@ class Response(object):
         return data
 
     def parse_headers(self):
-        ''' parse_headers:
-        Traverses the headers of the response and sets them in the `headers`
-        dictionary of the object.  Any handlers set for a header type will be
-        run against a header if it exists.
-        '''
+        """ Goes through the list of headers on the response and converts known
+        headers using defined handlers.
+        """
         if 'Link' in self.headers:
             self.__link_header()
 
     def __link_header(self):
-        ''' (private) link_header:
-        If the `Link` header is set in the response, the values will be parsed
-        and appropriate methods will be added for the relative locations.
-        '''
         links_raw = self.__base__.headers['Link'].split(',')
         links = {}
         for link in links_raw:
@@ -148,7 +161,7 @@ class Response(object):
         return self.__getattr__(item)
 
     def __repr__(self):
-        return "Response: " + self.url
+        return "<Response: {!s}>".format(self.url)
 
     def __str__(self):
         return self.__base__.read()
@@ -158,6 +171,8 @@ class Response(object):
 
 
 class Links(object):
+    """ Rich representation of the ``Link`` Header field.
+    """
     def __init__(self, parent, links):
         self.parent = parent
         self.links = links

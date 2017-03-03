@@ -6,6 +6,10 @@ from restler.utils import isstr
 
 
 class URL(object):
+    """ URL representation and manipulation structure, used for parsing,
+    manipulating, and interacting with a rich URL string.  Handles parsing out
+    protocol, domain, path, and query strings from a raw URL string.
+    """
     PATH_DELIMITER = '/'
     QUERY_DELIMITER = '?'
 
@@ -32,6 +36,19 @@ class URL(object):
         return self.__extend__(path)
 
     def __extend__(self, path):
+        """ Generates a new :class:`URL <URL>` with the added path extended to
+        the end of the existing path.  Can be triggered with the division and
+        addition interaction methods.
+
+        Usage::
+            >> my_url
+            URL<http://foo.bar/>
+            >> my_url + "baz"
+            URL<http://foo.bar/baz/>
+            >> my_url / "back"
+            URL<http://foo.bar/back/>
+
+        """
         new_url = self.clone()
 
         path, query = URL.split(path)
@@ -54,6 +71,8 @@ class URL(object):
 
     @classmethod
     def split(cls, path):
+        """ Break the path down into a list of the levels and the query string
+        """
         query = None
 
         if isstr(path):
@@ -65,6 +84,12 @@ class URL(object):
 
     @classmethod
     def translate_query(cls, qs):
+        """ Translate and normalize a query string into a dictionary, makes
+        some opinionated choices such as only taking the value if one value is
+        reported (HTTP allows for multiple of the same key to be defined, and
+        this does not attempt to normalize this scenario, it is on the user to
+        define this behavior)
+        """
         query = parse_qs(qs)
         query_dict = {}
         for key, value in query.items():

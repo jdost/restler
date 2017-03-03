@@ -7,6 +7,9 @@ except ImportError:
 
 
 def isstr(s):
+    """ generic string detector, handles both simple ASCII string types and the
+    unicode variant
+    """
     try:
         return isinstance(s, str) or isinstance(s, unicode)
     except NameError:
@@ -14,6 +17,9 @@ def isstr(s):
 
 
 def cstrip(src, chars):
+    """ strip defined characters from the string and return the stripped
+    version
+    """
     try:
         trans = str.maketrans('', '', chars)
         return src.translate(trans)
@@ -22,6 +28,8 @@ def cstrip(src, chars):
 
 
 def to_urlstr(p):
+    """ convert the passed in dictionary into a form encoded URL string
+    """
     params = []
     if any([isinstance(v, list) for v in p.values()]):
         removals = []

@@ -2,12 +2,16 @@ from restler.utils import isstr
 
 
 class URLHandler(object):
+    """ Datatype handler for URL strings.  Attempts to detect whether the
+    string respresents a valid URL within the namespace of the base URL
+    definition and converts the value into an equivalent :class:`Route <Route>`
+    """
+
     @classmethod
     def detection(cls, response, value):
-        ''' URLHandler.detection:
-        Tests if the value matches a format that signifies it is either an
+        """ Tests if the value matches a format that signifies it is either an
         absolute or relative path.
-        '''
+        """
         if not isstr(value):
             return False
 
@@ -16,9 +20,8 @@ class URLHandler(object):
 
     @classmethod
     def handler(cls, response, value):
-        ''' URLHandler.handler:
-        Returns a `Route` object for the value.
-        '''
+        """ Generates a representative :class:`Route <Route>`
+        """
         return response.__parent__[value]
 
 from restler import Response

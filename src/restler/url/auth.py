@@ -5,6 +5,10 @@ except ImportError:
 
 
 class AuthManager(object):
+    """ Simple wrapper around HTTP Auth registration and lookup.  Wraps the
+    ``urllib2`` manager and provides a simple interface to add in new
+    credentials.
+    """
     def __init__(self, auths, url):
         self.url = url
         if isinstance(auths, urllib2.HTTPPasswordMgr):
@@ -16,6 +20,8 @@ class AuthManager(object):
 
     @property
     def handler(self):
+        """ Valid ``urllib2`` request handler
+        """
         return urllib2.HTTPBasicAuthHandler(self._manager)
 
     def __add__(self, auth):

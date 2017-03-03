@@ -30,11 +30,15 @@ integration:
 clean:
 	@rm -vf ./src/*.pyc
 	@rm -vf ./src/*/*.pyc
+	@rm -vf ./src/*/*/*.pyc
 	@rm -vf ./tests/*.pyc
 	@rm -vf ./etc/*.pyc
 	@rm -vrf build/
 	@rm -vrf dist/
 	@rm -vrf *.egg-info/
+	@rm -vrf ./*/__pycache__/
+	@rm -vrf ./src/*/__pycache__/
+	@rm -vrf ./src/*/*/__pycache__/
 
 test_server:
 	${PYTHONPATH} python ./etc/http_server.py

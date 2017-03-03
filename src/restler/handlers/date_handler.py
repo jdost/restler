@@ -1,26 +1,40 @@
 import re
 from datetime import datetime
 from restler.utils import isstr
+from collections import namedtuple
+
+DateFormat = namedtuple("DateFormat", ['matcher', 'parser'])
 
 
 class DateHandler(object):
+    """ Datetype handler for date and time strings.  Can be extended with
+    various formats for string representations and will use the built in
+    ``stptime`` function to generate the rich ``datetime`` object of the raw
+    string value.
+    """
     current = None
-    types = [
-        {"regex": "[0-3][0-9]/[0-3][0-9]/[0-9]{2}", "parse": "%m/%d/%y"}
-    ]
+    types = []
+
+    @classmethod
+    def register(cls, regex, parse_str):
+        """ Register a new regex based string and strptime string to use for
+        detecting and parsing the raw data string into the rich ``datetime``
+        object.
+        """
+        cls.types.append(DateFormat(matcher=re.compile(regex),
+                                    parser=parse_str))
 
     @classmethod
     def detection(cls, response, value):
-        ''' DateHandler.detection:
-        Tests if the value matches a recognized date string format (ISO, IETF,
-        etc) so that it can then be converted into a more usable data
-        structure.
-        '''
+        """ Goes through registered string format types and provides whether
+        any of them match the provided string value.  Keeps track of which
+        format was matched so that it may later be used for conversion.
+        """
         for dateset in cls.types:
             if not isstr(value):
                 continue
-            if re.match(dateset["regex"], value):
-                cls.current = dateset["parse"]
+            if dateset.matcher.match(value):
+                cls.current = dateset.parser
                 return True
 
         cls.current = None
@@ -28,11 +42,9 @@ class DateHandler(object):
 
     @classmethod
     def handler(cls, response, value):
-        ''' DateHandler.handler:
-        If the detection function found that the value was a date, the
-        handler will be run against it.  As the detection already determined
-        the parse string to use, this just needs to handle the conversion.
-        '''
+        """ Converts the raw value into a rich ``datetime`` object using the
+        most recently detected format as the parsing definition.
+        """
         if not cls.current:
             return value
 
@@ -40,6 +52,8 @@ class DateHandler(object):
         cls.current = None
 
         return new_date
+
+DateHandler.register("[0-3][0-9]/[0-3][0-9]/[0-9]{2}", "%m/%d/%y")
 
 from restler import Response
 Response.add_datatype(DateHandler.detection, DateHandler.handler)
