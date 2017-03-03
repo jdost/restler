@@ -2,32 +2,39 @@ PYTHONVERSION = $(shell python --version 2>&1 | sed 's/Python //g')
 PYTHONMAJOR = $(firstword $(subst ., ,${PYTHONVERSION}))
 PYTHONPATH = PYTHONPATH=$(PWD)/src
 INTEGRATIONPYTHONPATH = ${PYTHONPATH}:$(PWD)/etc
+TEST_VERBOSITY = 1
+
+.PHONY: init unittest integration lint test test_all clean test_server shell publish
 
 init:
 	pip install -r requirements.txt
 
-unittest:
-	${PYTHONPATH} nosetests --rednose ./tests/test_*.py
-
-integration:
-	${INTEGRATIONPYTHONPATH} nosetests --rednose ./tests/integration/test_*.py
-
-lint:
-	flake8 --ignore=F401,E402 --max-complexity 12 src/
-	flake8 --ignore=F401 --max-complexity 12 tests/
-
 test: lint unittest
-
 test_all: lint unittest integration
 
+lint:
+	@echo "Linting check"
+	@flake8 --ignore=F401,E402 --max-complexity 12 src/
+	@flake8 --ignore=F401 --max-complexity 12 tests/
+
+unittest:
+	@echo "Unit tests"
+	@${PYTHONPATH} nosetests --verbosity=${TEST_VERBOSITY} \
+		--rednose ./tests/test_*.py
+
+integration:
+	@echo "Integration tests"
+	@${INTEGRATIONPYTHONPATH} nosetests --verbosity=${TEST_VERBOSITY} \
+		--rednose ./tests/integration/test_*.py
+
 clean:
-	rm -f ./src/*.pyc
-	rm -f ./src/*/*.pyc
-	rm -f ./tests/*.pyc
-	rm -f ./etc/*.pyc
-	rm -rf build/
-	rm -rf dist/
-	rm -rf *.egg-info/
+	@rm -vf ./src/*.pyc
+	@rm -vf ./src/*/*.pyc
+	@rm -vf ./tests/*.pyc
+	@rm -vf ./etc/*.pyc
+	@rm -vrf build/
+	@rm -vrf dist/
+	@rm -vrf *.egg-info/
 
 test_server:
 	${PYTHONPATH} python ./etc/http_server.py
