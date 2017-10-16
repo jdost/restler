@@ -183,9 +183,13 @@ class Builder(object):
     previously generated :class:`Route <Route>` objects, allowing for default
     overrides to carry forward to referencing the route again.
     """
+    BASE_ATTRIBUTE_FORWARDING = ["_default_headers", "_default_params"]
+
     def __init__(self, base, build_class=Route):
         self.lookup = {}
         self._build_class = build_class
+        for attribute in self.BASE_ATTRIBUTE_FORWARDING:
+            self.__dict__[attribute] = getattr(self._build_class, attribute)
         self.base = base
 
     def __call__(self, url, query=None):
